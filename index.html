@@ -936,6 +936,24 @@
     return (last.indexOf('|') >= 0 && last.indexOf('_') >= 0) ? last : null;
   }
 
+  // "#8783" in the address bar selects CET(3) holdout line 8783.
+  function hashHoldoutId() {
+    var h = location.hash.replace(/^#/, '').replace(/\/+$/, '').trim();
+    if (!/^\d{1,6}$/.test(h)) return 0;
+    return parseInt(h, 10) || 0;
+  }
+
+  function loadHashHoldout() {
+    var id = hashHoldoutId();
+    if (!id) return false;
+    var str = id <= holdCount() ? holdAt(id) : null;
+    if (!str) {
+      setError('No machine with that id in the CET(3) holdout list (1 \u2013 ' + fmt(holdCount()) + ').');
+      return false;
+    }
+    return setMachine(str);
+  }
+
   /* ------------------------------------------------------------------ */
   /* highlighted machines                                                */
   /* ------------------------------------------------------------------ */
@@ -1273,6 +1291,10 @@
     alignColumns();
   });
 
+  window.addEventListener('hashchange', function () {
+    if (hashHoldoutId()) loadHashHoldout();
+  });
+
   /* ------------------------------------------------------------------ */
   /* boot                                                                */
   /* ------------------------------------------------------------------ */
@@ -1280,15 +1302,21 @@
   alignColumns();
   requestAnimationFrame(alignColumns);
 
-  var fromUrl = loadFromUrl();
-  if (fromUrl) {
+  if (hashHoldoutId()) {
+    // "#8783" selects CET(3) holdout line 8783.
     app.fromUrl = true;
-    if (!setMachine(fromUrl)) {
-      // fall back to the CET(3) champion when the URL is malformed
+    if (!loadHashHoldout()) setMachine(defaultMachine(), { pushUrl: false });
+  } else {
+    var fromUrl = loadFromUrl();
+    if (fromUrl) {
+      app.fromUrl = true;
+      if (!setMachine(fromUrl)) {
+        // fall back to the CET(3) champion when the URL is malformed
+        setMachine(defaultMachine(), { pushUrl: false });
+      }
+    } else {
       setMachine(defaultMachine(), { pushUrl: false });
     }
-  } else {
-    setMachine(defaultMachine(), { pushUrl: false });
   }
 })();
 </script>
