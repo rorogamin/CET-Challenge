@@ -20,8 +20,9 @@
   .mono{font-family:var(--mono)}
 
   /* ---------- header ---------- */
-  .topbar{height:66px;display:flex;align-items:center;justify-content:space-between;
-    padding:0 15px;background:#13233a;border-bottom:1px solid #091320}
+  .topbar{height:66px;background:#13233a;border-bottom:1px solid #091320}
+  .topbar-inner{max-width:1600px;height:66px;margin:0 auto;padding:0 15px;
+    display:flex;align-items:center;justify-content:space-between;gap:16px}
   .brand{font-size:24px;font-weight:700;color:#f1f7fd;letter-spacing:-.3px;white-space:nowrap}
   .topnav{display:flex;gap:8px;align-items:center}
   .tbtn{font-size:11.5px;font-weight:600;color:#dcebf8;background:#1a2c42;
@@ -29,23 +30,29 @@
   .tbtn:hover{background:#22384f;border-color:#3a5b7d;text-decoration:none}
 
   /* ---------- layout ---------- */
-  .page{display:grid;grid-template-columns:minmax(0,1fr) 751px;column-gap:40px;
+  .page{max-width:1600px;margin:0 auto;display:grid;
+    grid-template-columns:minmax(0,1fr) 751px;column-gap:40px;
     padding:0 8px 48px;align-items:start}
   .left{min-width:0;padding-top:18px}
-  .right{min-width:0;padding-top:236px}
+  .right{min-width:0;padding-top:240px}
   @media (max-width:1120px){
     .page{grid-template-columns:minmax(0,1fr)}
     .right{padding-top:26px}
+  }
+  @media (max-width:700px){
+    .topbar{height:auto}
+    .topbar-inner{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px}
+    .brand{font-size:19px;white-space:normal}
   }
 
   /* ---------- left column ---------- */
   .lbl{font-size:11px;font-weight:700;color:#e6eef7}
   select.sel{margin-top:3px;width:84px;font-size:11.5px;color:#dbeaf7;background:#0a1624;
     border:1px solid #2a4159;border-radius:3px;padding:1px 3px}
-  .h2{font-size:12.5px;font-weight:700;color:#e9f1fa;margin:20px 0 5px}
-  .goal p{margin:0 0 8px;max-width:710px}
-  .goal ul{margin:0 0 8px 22px;padding:0}
-  .goal ol{margin:0 0 8px 22px;padding:0}
+  .h2{font-size:12.5px;font-weight:700;color:#e9f1fa;margin:16px 0 4px}
+  .goal p{margin:0 0 6px;max-width:710px}
+  .goal ul{margin:0 0 6px 22px;padding:0}
+  .goal ol{margin:0 0 6px 22px;padding:0}
   .goal li{margin:0 0 1px}
   .emo{font-size:11px}
   .join{color:#a9bfd4}
@@ -141,7 +148,8 @@
     font-weight:600;font-size:11.5px;padding:5px 12px;min-width:216px;border-radius:3px;cursor:pointer}
   .bluebtn:hover{background:#3a7ad9}
   .bluebtn.sm{min-width:0;font-size:11px;padding:3px 10px;font-weight:400}
-  .morelink{display:inline-block;margin-left:10px;font-size:10.5px;color:#8fb6d6;
+  .randombox{width:216px;display:flex;flex-direction:column;align-items:stretch;gap:4px}
+  .morelink{display:block;width:100%;text-align:center;font-size:10.5px;color:#8fb6d6;
     background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
   .morebox{margin-top:9px;font-size:11px;color:#a9bfd4;display:grid;gap:7px}
   .morebox[hidden]{display:none}
@@ -185,10 +193,12 @@
 <body>
 
 <header class="topbar">
-  <div class="brand">CET (Catch Em Turing)</div>
-  <div class="topnav">
-    <a class="tbtn" href="https://discord.com/channels/960643023006490684/1566772864064159744" target="_blank" rel="noopener">Discord post</a>
-    <a class="tbtn" href="https://wiki.bbchallenge.org/wiki/Catch-Em-Turing" target="_blank" rel="noopener">Catch Em Turing wiki page</a>
+  <div class="topbar-inner">
+    <div class="brand">CET (Catch Em Turing)</div>
+    <div class="topnav">
+      <a class="tbtn" href="https://discord.com/channels/960643023006490684/1566772864064159744" target="_blank" rel="noopener">Discord post</a>
+      <a class="tbtn" href="https://wiki.bbchallenge.org/wiki/Catch-Em-Turing" target="_blank" rel="noopener">Catch Em Turing wiki page</a>
+    </div>
   </div>
 </header>
 
@@ -300,8 +310,9 @@
 
     <div class="h3">Change machine:</div>
     <div class="small">Random machine from the <a href="#" id="seedA">CET(3) holdout list</a></div>
-    <div>
-      <button id="btnRandom" class="bluebtn">Go (R)andom</button><button id="morelink" class="morelink">More options</button>
+    <div class="randombox">
+      <button id="btnRandom" class="bluebtn">Go (R)andom</button>
+      <button id="morelink" class="morelink">More options</button>
     </div>
 
     <div class="morebox" id="moreBox" hidden>
@@ -1243,6 +1254,15 @@
   });
   cv.addEventListener('pointerup', function () { dragging = false; });
 
+  // Keep the machine panel starting at the diagram, like the reference layout.
+  var rightCol = document.querySelector('.right');
+  function alignColumns() {
+    if (!rightCol) return;
+    if (window.innerWidth <= 1120) { rightCol.style.paddingTop = ''; return; }
+    var dt = cv.getBoundingClientRect().top - rightCol.getBoundingClientRect().top;
+    rightCol.style.paddingTop = Math.max(0, Math.round(dt + 16)) + 'px';
+  }
+
   window.addEventListener('resize', function () {
     var d = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
     if (d !== dpr) {
@@ -1251,12 +1271,15 @@
       cv.height = CH * dpr;
       draw();
     }
+    alignColumns();
   });
 
   /* ------------------------------------------------------------------ */
   /* boot                                                                */
   /* ------------------------------------------------------------------ */
   renderHighlighted();
+  alignColumns();
+  requestAnimationFrame(alignColumns);
 
   var fromUrl = loadFromUrl();
   if (fromUrl) {
