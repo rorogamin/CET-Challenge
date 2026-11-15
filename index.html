@@ -58,9 +58,10 @@
   .join{color:#a9bfd4}
 
   /* ---------- diagram ---------- */
-  .diagrambox{width:332px;margin-left:auto;margin-right:36px;position:relative}
+  .diagrambox{width:480px;max-width:100%;margin-left:auto;margin-right:36px;position:relative}
   @media (max-width:1120px){ .diagrambox{margin-left:auto;margin-right:auto} }
-  #cv{display:block;width:332px;height:355px;background:#000;border:1px solid #16283c;cursor:crosshair}
+  #cv{display:block;width:100%;max-width:480px;height:auto;aspect-ratio:480/512;
+    background:#000;border:0;box-shadow:0 0 0 1px #16283c;cursor:crosshair}
   .transport{display:flex;align-items:center;gap:2px;margin-top:5px}
   .transport button{padding:0;width:20px;height:18px;font-size:10px;line-height:1;
     background:#152739;border:1px solid #26405a;border-radius:2px;color:#bcd1e4}
@@ -80,7 +81,7 @@
   .subnav{margin:8px 0 0;font-size:11.5px;color:#8ba1b6}
   .subnav a{cursor:pointer}
   .subnav .dot{margin:0 4px;color:#5d7488}
-  .params{margin-top:8px;max-width:560px;border-radius:4px;padding:2px}
+  .params{margin-top:8px;max-width:none;border-radius:4px;padding:2px}
   .params.flash{outline:1px solid #3f7dbd;outline-offset:4px}
   .prow{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:6px}
   .pfield{display:flex;flex-direction:column;gap:1px;font-size:10.5px;color:#9fb4c9}
@@ -227,7 +228,7 @@
     </div>
 
     <div class="diagrambox">
-      <canvas id="cv" width="332" height="355"></canvas>
+      <canvas id="cv" width="480" height="512"></canvas>
       <div id="tip"></div>
       <div class="transport">
         <button id="tReset" title="Go to the first step">&#9198;</button>
@@ -240,9 +241,8 @@
         <span id="tLabel" class="tl">0 / 0</span>
       </div>
       <div class="statusline" id="statusLine"></div>
-    </div>
 
-    <div class="subnav">
+      <div class="subnav">
       <a id="whatLink">What is this?</a><span class="dot">&middot;</span><a id="paramsLink">Simulation Parameters</a>
     </div>
 
@@ -284,6 +284,7 @@
         <li><b>November 10th 2026</b> &mdash; the Catch-Em-Turing wiki page lists the CET(3) champion at 10^^12.467 steps</li>
         <li><b>November 2026</b> &mdash; Catch-Em-Turing is proposed by NathFR76: two agents, one tape, collision halts</li>
       </ul>
+    </div>
     </div>
 
   </section>
@@ -395,7 +396,7 @@
   /* ------------------------------------------------------------------ */
   /* helpers                                                             */
   /* ------------------------------------------------------------------ */
-  var CW = 332, CH = 355;               // diagram size, exactly as the bbchallenge viewer
+  var CW = 480, CH = 512;               // diagram size (the bbchallenge viewer is 332x355)
   var MAX_STEPS = 200000;
 
   var $ = function (s) { return document.querySelector(s); };
@@ -686,8 +687,6 @@
   var dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
   cv.width = CW * dpr;
   cv.height = CH * dpr;
-  cv.style.width = CW + 'px';
-  cv.style.height = CH + 'px';
 
   function cellToX(cell) {
     var span = clamp(Math.round(params.tapeWidth), 1, 20000);
@@ -1243,8 +1242,8 @@
       '\nagent 2: ' + stateName(app.sim.hs2[t]) + ' @ ' + fmt(app.sim.hp2[t]);
     tip.style.display = 'block';
     var x = e.clientX - r.left, y = e.clientY - r.top;
-    if (x > 190) x -= 180;
-    if (y > 300) y -= 60;
+    if (x > CW * 0.55) x -= 180;
+    if (y > CH - 70) y -= 64;
     tip.style.left = x + 'px';
     tip.style.top = y + 'px';
   });
