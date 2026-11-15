@@ -1,0 +1,1274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>CET (Catch Em Turing)</title>
+<style>
+  :root{
+    --bg:#0d1a2b; --panel:#13233a; --line:#1e334b;
+    --text:#c8d8e8; --dim:#8ba1b6; --link:#7cc7ec; --white:#eaf2fb;
+    --mono:"Cascadia Mono",Consolas,"SF Mono",Menlo,"DejaVu Sans Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    font-size:12.5px;line-height:1.55}
+  a{color:var(--link);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .mono{font-family:var(--mono)}
+
+  /* ---------- header ---------- */
+  .topbar{height:66px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 15px;background:#13233a;border-bottom:1px solid #091320}
+  .brand{font-size:24px;font-weight:700;color:#f1f7fd;letter-spacing:-.3px;white-space:nowrap}
+  .topnav{display:flex;gap:8px;align-items:center}
+  .tbtn{font-size:11.5px;font-weight:600;color:#dcebf8;background:#1a2c42;
+    border:1px solid #2b4460;border-radius:3px;padding:4px 9px;white-space:nowrap}
+  .tbtn:hover{background:#22384f;border-color:#3a5b7d;text-decoration:none}
+
+  /* ---------- layout ---------- */
+  .page{display:grid;grid-template-columns:minmax(0,1fr) 751px;column-gap:40px;
+    padding:0 8px 48px;align-items:start}
+  .left{min-width:0;padding-top:18px}
+  .right{min-width:0;padding-top:236px}
+  @media (max-width:1120px){
+    .page{grid-template-columns:minmax(0,1fr)}
+    .right{padding-top:26px}
+  }
+
+  /* ---------- left column ---------- */
+  .lbl{font-size:11px;font-weight:700;color:#e6eef7}
+  select.sel{margin-top:3px;width:84px;font-size:11.5px;color:#dbeaf7;background:#0a1624;
+    border:1px solid #2a4159;border-radius:3px;padding:1px 3px}
+  .h2{font-size:12.5px;font-weight:700;color:#e9f1fa;margin:20px 0 5px}
+  .goal p{margin:0 0 8px;max-width:710px}
+  .goal ul{margin:0 0 8px 22px;padding:0}
+  .goal ol{margin:0 0 8px 22px;padding:0}
+  .goal li{margin:0 0 1px}
+  .emo{font-size:11px}
+  .join{color:#a9bfd4}
+
+  /* ---------- diagram ---------- */
+  .diagrambox{width:332px;margin-left:auto;margin-right:36px;position:relative}
+  @media (max-width:1120px){ .diagrambox{margin-left:auto;margin-right:auto} }
+  #cv{display:block;width:332px;height:355px;background:#000;border:1px solid #16283c;cursor:crosshair}
+  .transport{display:flex;align-items:center;gap:2px;margin-top:5px}
+  .transport button{padding:0;width:20px;height:18px;font-size:10px;line-height:1;
+    background:#152739;border:1px solid #26405a;border-radius:2px;color:#bcd1e4}
+  .transport button:hover{background:#1d3448}
+  .transport input[type=range]{flex:1;min-width:0;height:14px;accent-color:#3b82f6;
+    background:transparent;border:0;padding:0;margin:0}
+  .transport .tl{font-size:10px;color:#8ba1b6;min-width:72px;text-align:right;
+    font-variant-numeric:tabular-nums;font-family:var(--mono)}
+  .statusline{font-size:10.5px;color:#8ba1b6;margin-top:2px;min-height:14px}
+  .statusline.err{color:#ff8f8f}
+  .statusline.ok{color:#84e0a8}
+  #tip{position:absolute;pointer-events:none;background:#081422;border:1px solid #2c4a67;
+    color:#dbe9f7;font-size:10.5px;padding:3px 6px;border-radius:3px;white-space:pre;
+    display:none;z-index:6;font-family:var(--mono)}
+
+  /* ---------- simulation parameters ---------- */
+  .subnav{margin:8px 0 0;font-size:11.5px;color:#8ba1b6}
+  .subnav a{cursor:pointer}
+  .subnav .dot{margin:0 4px;color:#5d7488}
+  .params{margin-top:8px;max-width:560px;border-radius:4px;padding:2px}
+  .params.flash{outline:1px solid #3f7dbd;outline-offset:4px}
+  .prow{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:6px}
+  .pfield{display:flex;flex-direction:column;gap:1px;font-size:10.5px;color:#9fb4c9}
+  .pfield input{width:88px}
+  .pfield.wide{flex:1;min-width:260px}
+  .pfield.wide input{width:100%}
+  input,select{font-family:inherit;font-size:11px;color:#d7e6f4;background:#0a1624;
+    border:1px solid #2a4159;border-radius:3px;padding:2px 5px;outline:none}
+  input:focus,select:focus{border-color:#3f7dbd}
+  input[type=checkbox]{accent-color:#3b82f6}
+  .chk{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#b9cadb;margin:6px 0}
+  .vizrow{font-size:11.5px;color:#b9cadb;display:flex;align-items:center;gap:4px}
+  .vizrow .lab{margin-right:2px}
+  .vizbtn{font-size:10.5px;padding:1px 6px;background:#122336;border:1px solid #26405a;
+    color:#a9bfd4;border-radius:2px}
+  .vizbtn.on{background:#1d4b7d;border-color:#3f7dbd;color:#dcefff}
+  details.adv{margin-top:7px;font-size:11px;color:#8ba1b6}
+  details.adv summary{cursor:pointer;outline:none}
+  .advgrid{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px}
+  .hint{font-size:10.5px;color:#6f8699;margin-top:4px}
+
+  /* ---------- news ---------- */
+  .newswrap{display:flex;gap:18px;align-items:flex-start;margin-top:6px}
+  .newsbadge{width:110px;height:110px;flex:none;border-radius:4px;background:#0a1522;
+    border:1px solid #1f3449;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:2px}
+  .nb-ring{width:86px;height:86px;border:2px solid #c9dcea;border-radius:50%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;color:#e6f0f9}
+  .nb-ring b{font-size:15px;letter-spacing:1px}
+  .nb-ring span{font-size:6px;letter-spacing:1.2px;color:#a9c2d6}
+  .newslist{list-style:none;margin:0;padding:0;font-size:11.5px}
+  .newslist li{margin:0 0 7px;color:#a9bfd4;max-width:560px}
+  .newslist b{color:#cfdfee;font-weight:600}
+
+  /* ---------- right column ---------- */
+  .machinehead{font-size:13px;color:#eaf2fb}
+  .machinehead .mid{color:#eaf2fb;font-weight:600}
+  .domain{font-size:10.5px;color:#7f96ac;margin:2px 0 0}
+  .errbox{display:none;font-size:11px;color:#ffb3b3;background:#3a1520;border:1px solid #6d2333;
+    border-radius:3px;padding:4px 7px;margin-top:6px;max-width:660px}
+  .errbox.on{display:block}
+  .h3{font-size:12px;font-weight:700;color:#e9f1fa;margin:15px 0 4px}
+  .codetables{display:flex;flex-wrap:wrap;gap:28px;margin-top:3px}
+  .agentname{font-size:10.5px;color:#9fb4c9;margin-bottom:2px}
+  table.code{border-collapse:collapse;font-family:var(--mono);font-size:11px;color:#cfdfee}
+  table.code th{font-weight:400;color:#9fb4c9;padding:0 0 3px;min-width:46px;text-align:left}
+  table.code th.stname{color:#c9d9e9;font-weight:600;min-width:16px;padding-right:6px}
+  table.code td{padding:0;min-width:46px;color:#d7e6f4}
+  table.code td.undef{color:#4f6477}
+  .stdline{font-size:10.5px;color:#8ba1b6;margin-top:12px}
+  #stdFormat{display:inline-block;font-family:var(--mono);font-size:11px;color:#cfe3f3;
+    background:#0a1726;border:1px solid #21384f;border-radius:3px;padding:1px 5px;
+    margin-left:4px;word-break:break-all;cursor:pointer;max-width:652px;vertical-align:top}
+  #stdFormat:hover{border-color:#3f7dbd}
+  .dbid{font-size:10.5px;color:#8ba1b6;margin-top:4px}
+  .dbid #dbId{color:#cfdfee}
+  .dbid .muted{color:#7691a7}
+  .minirow{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;align-items:center}
+  .minirow button,.minirow a.minilink{font-size:10.5px;padding:2px 7px;background:#152739;
+    border:1px solid #26405a;border-radius:3px;color:#c5d8ea;cursor:pointer}
+  .minirow a.minilink{display:inline-block}
+  .minirow button:hover,.minirow a.minilink:hover{background:#1d3448;text-decoration:none}
+  #copyMsg{font-size:10.5px;color:#84e0a8}
+  .bluebtn{margin-top:7px;background:#2f6fd0;border:1px solid #4181e0;color:#f2f8ff;
+    font-weight:600;font-size:11.5px;padding:5px 12px;min-width:216px;border-radius:3px;cursor:pointer}
+  .bluebtn:hover{background:#3a7ad9}
+  .bluebtn.sm{min-width:0;font-size:11px;padding:3px 10px;font-weight:400}
+  .morelink{display:inline-block;margin-left:10px;font-size:10.5px;color:#8fb6d6;
+    background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+  .morebox{margin-top:9px;font-size:11px;color:#a9bfd4;display:grid;gap:7px}
+  .morebox[hidden]{display:none}
+  .morebox .row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .morebox input[type=text]{width:300px}
+  .morebox input[type=number]{width:88px;color:#d7e6f4}
+  .morebox button{padding:2px 8px;background:#152739;border:1px solid #26405a;color:#c5d8ea}
+  .small{font-size:11px;color:#a9bfd4}
+  .hlhead{font-size:15px;font-weight:700;color:#eef5fc;margin:36px 0 3px}
+  #hlList{display:flex;flex-direction:column;gap:1px;margin-top:7px;max-width:700px}
+  .hlbtn{display:block;width:100%;text-align:left;background:none;border:0;padding:1px 0;
+    color:#7cc7ec;font-size:11.5px;cursor:pointer;line-height:1.4}
+  .hlbtn:hover{text-decoration:underline;background:none}
+  .hlbtn .hlstr{display:block;font-family:var(--mono);font-size:9.5px;color:#546d84;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hlbtn:hover .hlstr{color:#8fa9c0}
+
+  /* ---------- modal ---------- */
+  .modal{position:fixed;inset:0;background:rgba(4,10,18,.8);display:none;z-index:50;
+    padding:40px 16px;overflow:auto}
+  .modal.open{display:block}
+  .modalbox{max-width:740px;margin:0 auto;background:#0f2033;border:1px solid #2a4763;
+    border-radius:6px;padding:18px 22px 22px;box-shadow:0 20px 60px rgba(0,0,0,.65)}
+  .modalbox h2{margin:0 0 2px;font-size:18px;color:#f2f8ff}
+  .modalbox h3{font-size:12.5px;margin:16px 0 4px;color:#e9f1fa}
+  .modalbox p,.modalbox li{font-size:12px;color:#c3d5e6}
+  .modalbox ul{margin:4px 0 4px 18px;padding:0}
+  .modalbox code{font-family:var(--mono);font-size:11px;color:#bfe0f5;background:#0a1726;
+    border:1px solid #21384f;border-radius:3px;padding:0 3px}
+  .modalhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .closebtn{font-size:11px;padding:2px 8px;background:#152739;border:1px solid #26405a;
+    color:#c5d8ea;border-radius:3px;cursor:pointer}
+  .legend{display:flex;align-items:center;gap:10px;margin:8px 0 4px;flex-wrap:wrap}
+  .legend .bar{height:12px;width:220px;border:1px solid #2a4763;border-radius:2px;
+    background:linear-gradient(90deg,#000,#fff)}
+  .legend .sw{display:flex;gap:6px;flex-wrap:wrap}
+  .legend .sw span{font-size:10px;font-family:var(--mono);border:1px solid #2a4763;
+    padding:0 5px;border-radius:2px;color:#e6f0f9}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">CET (Catch Em Turing)</div>
+  <div class="topnav">
+    <a class="tbtn" href="https://discord.com/channels/960643023006490684/1566772864064159744" target="_blank" rel="noopener">Discord post</a>
+    <a class="tbtn" href="https://wiki.bbchallenge.org/wiki/Catch-Em-Turing" target="_blank" rel="noopener">Catch Em Turing wiki page</a>
+  </div>
+</header>
+
+<main class="page">
+  <section class="left">
+
+    <div class="lbl">Choose challenge</div>
+    <select id="challenge" class="sel" title="The only CET domain with a holdout list so far">
+      <option value="cet3">CET(3)</option>
+    </select>
+
+    <div class="h2">Challenge goal</div>
+    <div class="goal">
+      <p>There remain <b id="remain">0</b> machines with 3 states to decide! <span class="emo">⚠️</span></p>
+      <p>The best known CET(3) machine runs for <span class="mono">10^^12.467</span> steps:</p>
+      <ul>
+        <li><a href="https://wiki.bbchallenge.org/wiki/Catch-Em-Turing" target="_blank" rel="noopener">See the CET(3) champion analysis</a></li>
+        <li><a href="https://wiki.bbchallenge.org/wiki/Catch-Em-Turing" target="_blank" rel="noopener">See the official announcement</a></li>
+      </ul>
+      <p>Here's what's next:</p>
+      <ol>
+        <li>We are working on holdout lists and champions for CET(1), CET(2), CET(4) and CET(2,3)</li>
+        <li>We are maintaining Catch-Em-Turing knowledge through our Discord, forum and wiki</li>
+      </ol>
+      <p class="join"><a href="https://discord.com/channels/960643023006490684/1566772864064159744" target="_blank" rel="noopener">Join our Discord server</a> - You can help!</p>
+    </div>
+
+    <div class="diagrambox">
+      <canvas id="cv" width="332" height="355"></canvas>
+      <div id="tip"></div>
+      <div class="transport">
+        <button id="tReset" title="Go to the first step">&#9198;</button>
+        <button id="tBack" title="Step back">&larr;</button>
+        <button id="tPlay" title="Play / pause">&#9654;</button>
+        <button id="tFwd" title="Step forward">&rarr;</button>
+        <button id="tEnd" title="Go to the last simulated step">&#9197;</button>
+        <button id="tFit" title="Fit the diagram to the whole tape">&#8663;</button>
+        <input id="tRange" type="range" min="0" max="1" value="1" step="1" title="Simulation time">
+        <span id="tLabel" class="tl">0 / 0</span>
+      </div>
+      <div class="statusline" id="statusLine"></div>
+    </div>
+
+    <div class="subnav">
+      <a id="whatLink">What is this?</a><span class="dot">&middot;</span><a id="paramsLink">Simulation Parameters</a>
+    </div>
+
+    <div class="params" id="params">
+      <div class="prow">
+        <label class="pfield">steps <input id="pSteps" type="number" min="1" max="200000" step="1" value="2000"></label>
+        <label class="pfield">tape width <input id="pTapeWidth" type="number" min="8" max="20000" step="1" value="400"></label>
+        <label class="pfield">x translation <input id="pXTrans" type="number" min="0" max="1" step="0.01" value="0.5"></label>
+      </div>
+      <label class="pfield wide">initial tape content
+        <input id="pInitTape" type="text" value="0" spellcheck="false" placeholder="e.g. 0110100">
+      </label>
+      <div class="hint" id="viewHint"></div>
+
+      <details class="adv">
+        <summary>More simulation parameters</summary>
+        <div class="advgrid">
+          <label class="pfield">initial tape start x <input id="pInitX" type="number" step="1" value="0"></label>
+          <label class="pfield">agent 1 start x <input id="pX1" type="number" step="1" value="0"></label>
+          <label class="pfield">agent 2 start x <input id="pX2" type="number" step="1" value="2"></label>
+        </div>
+        <div class="hint">Both agents start in state A. The tape is blank outside the initial content.</div>
+      </details>
+
+      <label class="chk"><input id="pShowHeads" type="checkbox" checked> Show head movement (green for L, red for R)</label>
+
+      <div class="vizrow"><span class="lab">Visualization:</span>
+        <button class="vizbtn on" data-viz="default">Default</button>
+        <button class="vizbtn" data-viz="explore">Explore</button>
+        <button class="vizbtn" data-viz="blaze">Blaze</button>
+      </div>
+    </div>
+
+    <div class="h2">News</div>
+    <div class="newswrap">
+      <div class="newsbadge"><div class="nb-ring"><b>CET</b><span>CATCH EM TURING</span></div></div>
+      <ul class="newslist">
+        <li><b>November 15th 2026</b> &mdash; this CET viewer and the CET(3) holdout browser are published</li>
+        <li><b>November 10th 2026</b> &mdash; the Catch-Em-Turing wiki page lists the CET(3) champion at 10^^12.467 steps</li>
+        <li><b>November 2026</b> &mdash; Catch-Em-Turing is proposed by NathFR76: two agents, one tape, collision halts</li>
+      </ul>
+    </div>
+
+  </section>
+
+  <aside class="right">
+    <div class="machinehead" id="machineHead">Machine</div>
+    <div class="domain" id="domainLine"></div>
+    <div class="errbox" id="errBox"></div>
+
+    <div class="h3">Machine code:</div>
+    <div class="codetables" id="codeArea"></div>
+
+    <div class="stdline">Std format:<a id="stdFormat" class="mono" title="Click to copy this machine string"></a></div>
+    <div class="dbid">Database id: <span id="dbId">not in the CET(3) holdout list</span></div>
+
+    <div class="minirow">
+      <button id="btnCopy">Copy CET string</button>
+      <button id="btnCopy1">Copy machine 1</button>
+      <button id="btnCopy2">Copy machine 2</button>
+      <button id="btnCopyLink">Copy link to this machine</button>
+      <a class="minilink" id="btnWiki" href="https://wiki.bbchallenge.org/wiki/Catch-Em-Turing" target="_blank" rel="noopener">Create wiki entry</a>
+      <span id="copyMsg"></span>
+    </div>
+
+    <div class="h3">Change machine:</div>
+    <div class="small">Random machine from the <a href="#" id="seedA">CET(3) holdout list</a></div>
+    <div>
+      <button id="btnRandom" class="bluebtn">Go (R)andom</button><button id="morelink" class="morelink">More options</button>
+    </div>
+
+    <div class="morebox" id="moreBox" hidden>
+      <div class="row">
+        <button id="btnRandomAny" class="bluebtn sm">Random CET(3) table</button>
+        <button id="btnFitHoldout" class="bluebtn sm">Fit view to random holdout</button>
+      </div>
+      <div class="row">
+        <span>From id in the <a href="#" id="seedA2">CET(3) holdout list</a>:</span>
+        <input id="idInput" type="number" min="1" step="1" placeholder="1">
+        <button id="goId">Go</button>
+      </div>
+      <div class="row">
+        <span>From standard format:</span>
+        <input id="stdInput" type="text" spellcheck="false" placeholder="1LB0LB_1RB0LA|1RB1LA_1LA1RB">
+        <button id="goStd">Go</button>
+      </div>
+    </div>
+
+    <div class="hlhead">Highlighted machines</div>
+    <div class="small">Interesting machines:</div>
+    <div id="hlList"></div>
+  </aside>
+</main>
+
+<div class="modal" id="modal">
+  <div class="modalbox">
+    <div class="modalhead">
+      <div>
+        <h2>Catch-Em-Turing (CET)</h2>
+        <div class="small">Two agents, one shared tape, collision halts.</div>
+      </div>
+      <button class="closebtn" id="modalClose">Close</button>
+    </div>
+
+    <h3>The model</h3>
+    <ul>
+      <li>A CET(n) machine has <b>2 agents</b>, each with its own table of <b>n states</b> and the same <b>k symbols</b>.</li>
+      <li>Both agents start in state <b>A</b>. Agent 1 starts on cell <b>0</b>, agent 2 on cell <b>2</b>. The tape is blank.</li>
+      <li>Every step both agents read their cell, then write, move one cell and change state &mdash; <b>simultaneously</b>.</li>
+      <li>Reads happen before either write. If both agents write the same cell, the <b>lower-numbered agent wins</b>.</li>
+      <li>There is no HALT state. A run halts only when both agents <b>occupy the same cell after a step</b>.</li>
+    </ul>
+
+    <h3>Machine format</h3>
+    <p><code>machine1|machine2</code> in bbchallenge standard format: rows separated by <code>_</code>,
+      each entry is <code>write + move + next state</code>. For example <code>1RB</code> means
+      write 1, move <b>R</b>ight, go to state <b>B</b>. <code>---</code> is an undefined transition.</p>
+
+    <h3>Diagram</h3>
+    <p>Time runs downward. Each row is a slice of simulated time, columns are tape cells. Every symbol has
+      its own grey level: <b>black is symbol 0</b> and <b>white is the highest symbol</b> &mdash; the rest is
+      an even black-to-white gradient, so it works for any number of symbols.</p>
+    <div class="legend">
+      <div class="bar"></div>
+      <div class="sw" id="legendSwatches"></div>
+    </div>
+    <ul>
+      <li>Head markers are <span style="color:#39d353">green when the head moved left</span> and
+        <span style="color:#ff6b6b">red when it moved right</span>. Agent 1 is drawn brighter than agent 2.</li>
+      <li>Click or drag on the diagram to move through time; a yellow ring marks the collision that halts the run.</li>
+      <li><b>Simulation Parameters</b> sets how many steps are run, how many tape cells are visible, where the
+        tape sits horizontally, and the initial tape content in 0s and 1s.</li>
+    </ul>
+
+    <h3>Links</h3>
+    <p>
+      <a href="https://wiki.bbchallenge.org/wiki/Catch-Em-Turing" target="_blank" rel="noopener">Catch-Em-Turing wiki page</a>
+      &nbsp;&middot;&nbsp;
+      <a href="https://discord.com/channels/960643023006490684/1566772864064159744" target="_blank" rel="noopener">Discord post</a>
+    </p>
+  </div>
+</div>
+
+<script src="cet3-holdouts.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ------------------------------------------------------------------ */
+  /* helpers                                                             */
+  /* ------------------------------------------------------------------ */
+  var CW = 332, CH = 355;               // diagram size, exactly as the bbchallenge viewer
+  var MAX_STEPS = 200000;
+
+  var $ = function (s) { return document.querySelector(s); };
+  var fmt = function (n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+  var stateName = function (i) { return String.fromCharCode(65 + i); };
+  var isHttp = location.protocol === 'http:' || location.protocol === 'https:';
+  var clamp = function (v, lo, hi) { return Math.min(hi, Math.max(lo, v)); };
+  var intOf = function (v, d) { var n = parseInt(v, 10); return isFinite(n) ? n : d; };
+  var floatOf = function (v, d) { var n = parseFloat(v); return isFinite(n) ? n : d; };
+
+  /* ------------------------------------------------------------------ */
+  /* CET(3) holdout list: line number = machine id                        */
+  /* ------------------------------------------------------------------ */
+  var HOLD_RAW = (window.CET3_HOLDOUTS || '').trim();
+  var holdArr = null, holdMap = null;
+
+  function holdLines() {
+    if (!holdArr) holdArr = HOLD_RAW ? HOLD_RAW.split('\n') : [];
+    return holdArr;
+  }
+  function holdCount() { return holdLines().length; }
+  function holdId(str) {
+    if (!holdMap) {
+      holdMap = new Map();
+      var L = holdLines();
+      for (var i = 0; i < L.length; i++) {
+        var t = L[i].trim().split(/\s+/);
+        if (t.length === 2) holdMap.set(t[0] + '|' + t[1], i + 1);
+      }
+    }
+    return holdMap.get(str) || 0;
+  }
+  function holdAt(id) {
+    var L = holdLines();
+    if (!L.length) return null;
+    var i = clamp((id | 0) - 1, 0, L.length - 1);
+    var t = L[i].trim().split(/\s+/);
+    return t.length === 2 ? (t[0] + '|' + t[1]) : null;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* machine parsing                                                     */
+  /* ------------------------------------------------------------------ */
+  function parseCET(text) {
+    var t = String(text == null ? '' : text).trim();
+    if (!t) throw new Error('Empty machine string.');
+    t = t.replace(/\s+/g, '');
+    var parts = t.split('|');
+    if (parts.length !== 2) {
+      throw new Error('CET format is machine1|machine2 (exactly two agents).');
+    }
+    var agents = parts.map(function (part, ai) {
+      if (!part) throw new Error('Agent ' + (ai + 1) + ' is empty.');
+      return part.split('_').filter(function (r) { return r.length; }).map(function (row) {
+        if (row.length % 3 !== 0) {
+          throw new Error('Agent ' + (ai + 1) + ': row "' + row + '" is not a whole number of transitions.');
+        }
+        var ents = [];
+        for (var i = 0; i < row.length; i += 3) {
+          var e = row.slice(i, i + 3);
+          if (e === '---') { ents.push(null); continue; }
+          var m = /^([0-9])([LR])([A-Z])$/.exec(e);
+          if (!m) throw new Error('Agent ' + (ai + 1) + ': bad transition "' + e + '".');
+          ents.push({ w: +m[1], d: m[2] === 'L' ? -1 : 1, s: m[3].charCodeAt(0) - 65, raw: e });
+        }
+        return ents;
+      });
+    });
+
+    var n = agents[0].length;
+    if (!n) throw new Error('Agent 1 has no states.');
+    if (agents[1].length !== n) {
+      throw new Error('Both agents need the same number of states (' + n + ' vs ' + agents[1].length + ').');
+    }
+    var k = agents[0][0].length;
+    if (k < 2) throw new Error('A machine needs at least 2 symbols per row.');
+    agents.forEach(function (ag, ai) {
+      if (ag.length !== n) throw new Error('Agent ' + (ai + 1) + ' has ' + ag.length + ' states, expected ' + n + '.');
+      ag.forEach(function (row, si) {
+        if (row.length !== k) {
+          throw new Error('Agent ' + (ai + 1) + ' state ' + stateName(si) + ' has ' + row.length + ' symbols, expected ' + k + '.');
+        }
+        row.forEach(function (e) {
+          if (!e) return;
+          if (e.w >= k) throw new Error('Write symbol ' + e.w + ' does not exist (' + k + ' symbols).');
+          if (e.s >= n) throw new Error('Next state ' + stateName(e.s) + ' does not exist (' + n + ' states).');
+        });
+      });
+    });
+
+    function str() {
+      return agents.map(function (ag) {
+        return ag.map(function (row) {
+          return row.map(function (e) { return e ? e.raw : '---'; }).join('');
+        }).join('_');
+      }).join('|');
+    }
+
+    return { agents: agents, n: n, k: k, str: str() };
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* tape                                                                */
+  /* ------------------------------------------------------------------ */
+  function Tape(limit) {
+    var size = Math.min(1 << 24, Math.max(4096, limit * 2 + 4096));
+    this.size = size;
+    this.off = size >> 1;
+    this.a = new Uint8Array(size);
+    this.spill = null;
+  }
+  Tape.prototype.get = function (p) {
+    var i = p + this.off;
+    if (i >= 0 && i < this.size) return this.a[i];
+    return this.spill ? (this.spill.get(p) || 0) : 0;
+  };
+  Tape.prototype.set = function (p, v) {
+    var i = p + this.off;
+    if (i >= 0 && i < this.size) { this.a[i] = v; return; }
+    if (!this.spill) this.spill = new Map();
+    if (v) this.spill.set(p, v); else this.spill.delete(p);
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* simulation                                                          */
+  /* ------------------------------------------------------------------ */
+  function simulate(m, P) {
+    var n = m.n, k = m.k;
+    var tbl = m.agents.map(function (ag) {
+      var w = new Uint8Array(n * k), d = new Int8Array(n * k);
+      var s = new Int8Array(n * k), bad = new Uint8Array(n * k);
+      for (var st = 0; st < n; st++) {
+        for (var sym = 0; sym < k; sym++) {
+          var idx = st * k + sym, e = ag[st][sym];
+          if (!e) { bad[idx] = 1; continue; }
+          w[idx] = e.w; d[idx] = e.d; s[idx] = e.s;
+        }
+      }
+      return { w: w, d: d, s: s, bad: bad };
+    });
+
+    var limit = clamp(P.steps | 0, 1, MAX_STEPS);
+    var tape = new Tape(limit);
+    var init = String(P.initTape || '').replace(/[^0-9]/g, '');
+    for (var i = 0; i < init.length; i++) {
+      var v = init.charCodeAt(i) - 48;
+      if (v >= k) throw new Error('Initial tape symbol ' + v + ' is invalid for ' + k + ' symbols.');
+      if (v) tape.set(P.initX + i, v);
+    }
+
+    var p1 = P.x1 | 0, p2 = P.x2 | 0;
+    var st1 = 0, st2 = 0;
+    var cells = new Map();      // cell -> [t0, t1, val, ...]
+    var open = new Map();       // cell -> { t0, val }
+    var hp1 = new Int32Array(limit + 1), hp2 = new Int32Array(limit + 1);
+    var hd1 = new Int8Array(limit + 1), hd2 = new Int8Array(limit + 1);
+    var hs1 = new Int8Array(limit + 1), hs2 = new Int8Array(limit + 1);
+    hp1[0] = p1; hp2[0] = p2; hs1[0] = 0; hs2[0] = 0;
+
+    var t = 0, halted = false, haltStep = 0, haltPos = 0, error = null;
+
+    function writeCell(c, val, now) {
+      if (tape.get(c) === val) return;
+      var op = open.get(c);
+      if (op) {
+        var arr = cells.get(c);
+        if (!arr) { arr = []; cells.set(c, arr); }
+        arr.push(op.t0, now, op.val);
+      }
+      tape.set(c, val);
+      open.set(c, { t0: now, val: val });
+    }
+
+    for (var step = 0; step < limit; step++) {
+      var s1 = tape.get(p1), s2 = tape.get(p2);
+      var i1 = st1 * k + s1, i2 = st2 * k + s2;
+      if (tbl[0].bad[i1]) { error = 'Agent 1 has no transition in state ' + stateName(st1) + ' on symbol ' + s1 + ' (step ' + (step + 1) + ').'; break; }
+      if (tbl[1].bad[i2]) { error = 'Agent 2 has no transition in state ' + stateName(st2) + ' on symbol ' + s2 + ' (step ' + (step + 1) + ').'; break; }
+
+      var w1 = tbl[0].w[i1], w2 = tbl[1].w[i2];
+      var now = step + 1;
+      if (p1 === p2) {
+        writeCell(p1, w1, now);          // agent 1 has priority on a shared cell
+      } else {
+        writeCell(p1, w1, now);
+        writeCell(p2, w2, now);
+      }
+      p1 += tbl[0].d[i1];
+      p2 += tbl[1].d[i2];
+      st1 = tbl[0].s[i1];
+      st2 = tbl[1].s[i2];
+      hp1[now] = p1; hp2[now] = p2;
+      hd1[now] = tbl[0].d[i1]; hd2[now] = tbl[1].d[i2];
+      hs1[now] = st1; hs2[now] = st2;
+      t = now;
+      if (p1 === p2) { halted = true; haltStep = now; haltPos = p1; break; }
+    }
+
+    open.forEach(function (op, c) {
+      var arr = cells.get(c);
+      if (!arr) { arr = []; cells.set(c, arr); }
+      arr.push(op.t0, t, op.val);
+    });
+
+    return {
+      total: t, halted: halted, haltStep: haltStep, haltPos: haltPos, error: error,
+      cells: cells, hp1: hp1, hp2: hp2, hd1: hd1, hd2: hd2, hs1: hs1, hs2: hs2,
+      x1: P.x1 | 0, x2: P.x2 | 0
+    };
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* application state                                                   */
+  /* ------------------------------------------------------------------ */
+  var params = {
+    steps: 2000, tapeWidth: 400, xTrans: 0.5, initTape: '0', initX: 0,
+    x1: 0, x2: 2, heads: true, viz: 'default'
+  };
+  var app = {
+    machine: null, sim: null, time: 0, playing: false, raf: 0,
+    raster: null, rasterKey: '', fromUrl: false
+  };
+
+  var off = document.createElement('canvas');
+  off.width = CW; off.height = CH;
+  var octx = off.getContext('2d');
+  var cv = $('#cv');
+  var ctx = cv.getContext('2d');
+
+  /* ------------------------------------------------------------------ */
+  /* raster (tape layer): one vertical run per cell / symbol             */
+  /* ------------------------------------------------------------------ */
+  function buildRaster() {
+    var m = app.machine, sim = app.sim;
+    if (!m || !sim) {
+      octx.clearRect(0, 0, CW, CH);
+      octx.fillStyle = '#000';
+      octx.fillRect(0, 0, CW, CH);
+      return;
+    }
+    var W = CW, H = CH;
+    var T = Math.max(1, sim.total);
+    var span = clamp(Math.round(params.tapeWidth), 1, 20000);
+    var x0 = -span * params.xTrans;
+    var k = m.k;
+
+    // black -> white gradient, symbol 0 = black, symbol k-1 = white
+    var grey = new Uint8Array(k);
+    for (var v = 0; v < k; v++) grey[v] = Math.round(255 * v / Math.max(1, k - 1));
+
+    var img = octx.createImageData(W, H);
+    var d = img.data;
+    for (var i = 3; i < d.length; i += 4) d[i] = 255;   // opaque black background
+
+    sim.cells.forEach(function (arr, cell) {
+      var c = Math.floor((cell - x0) * W / span);
+      if (c < 0 || c >= W) return;
+      for (var j = 0; j < arr.length; j += 3) {
+        var t0 = arr[j], t1 = arr[j + 1], val = arr[j + 2];
+        if (!val || t1 <= t0) continue;
+        var y0 = Math.floor(t0 * H / T);
+        var y1 = Math.floor(t1 * H / T);
+        if (y1 <= y0) y1 = y0 + 1;
+        if (y0 < 0) y0 = 0;
+        if (y1 > H) y1 = H;
+        var col = grey[val];
+        for (var y = y0; y < y1; y++) {
+          var p = (y * W + c) * 4;
+          d[p] = col; d[p + 1] = col; d[p + 2] = col;
+        }
+      }
+    });
+
+    octx.putImageData(img, 0, 0);
+    app.raster = off;
+    app.rasterKey = rasterKey();
+  }
+
+  function rasterKey() {
+    var s = app.sim;
+    return [app.machine ? app.machine.str : '', params.steps, params.tapeWidth, params.xTrans,
+      params.initTape, params.initX, params.x1, params.x2, s ? s.total : -1].join('|');
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* drawing                                                             */
+  /* ------------------------------------------------------------------ */
+  var dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+  cv.width = CW * dpr;
+  cv.height = CH * dpr;
+  cv.style.width = CW + 'px';
+  cv.style.height = CH + 'px';
+
+  function cellToX(cell) {
+    var span = clamp(Math.round(params.tapeWidth), 1, 20000);
+    var x0 = -span * params.xTrans;
+    return (cell - x0) * CW / span;
+  }
+
+  function draw() {
+    var sim = app.sim;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, CW, CH);
+    ctx.imageSmoothingEnabled = false;
+    if (app.raster) ctx.drawImage(app.raster, 0, 0, CW, CH);
+
+    if (!sim) return;
+    var H = CH, T = Math.max(1, sim.total);
+    var time = clamp(app.time | 0, 0, sim.total);
+    var yTime = Math.min(H, Math.floor(time * H / T));
+
+    // dim the not-yet-reached future
+    if (yTime < H) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, yTime, CW, H - yTime);
+    }
+    if (yTime < H) {
+      ctx.fillStyle = 'rgba(66,140,200,.55)';
+      ctx.fillRect(0, yTime, CW, 1);
+    }
+
+    // guide line at cell 0 for explore mode
+    if (params.viz === 'explore') {
+      var gx = Math.round(cellToX(0));
+      if (gx >= 0 && gx < CW) {
+        ctx.fillStyle = 'rgba(120,170,220,.18)';
+        ctx.fillRect(gx, 0, 1, H);
+      }
+    }
+
+    // head trajectories, coloured by move direction
+    if (params.heads || params.viz !== 'default') {
+      for (var a = 0; a < 2; a++) {
+        var green = new Path2D(), red = new Path2D(), any = false;
+        var prevX = null, prevY = 0;
+        var hp = a === 0 ? sim.hp1 : sim.hp2;
+        var hd = a === 0 ? sim.hd1 : sim.hd2;
+        for (var y = 0; y <= yTime; y++) {
+          var tt = Math.min(sim.total, Math.round(y * T / H));
+          var x = cellToX(hp[tt]) + 0.5;
+          if (prevX !== null && y > prevY) {
+            var path = hd[tt] < 0 ? green : (hd[tt] > 0 ? red : null);
+            if (path) {
+              path.moveTo(prevX, prevY);
+              path.lineTo(x, y);
+              any = true;
+            }
+          }
+          prevX = x; prevY = y;
+        }
+        ctx.globalAlpha = a === 0 ? 0.95 : 0.6;
+        ctx.lineWidth = params.viz === 'blaze' ? 1.6 : 1;
+        if (any) {
+          ctx.strokeStyle = '#39d353'; ctx.stroke(green);
+          ctx.strokeStyle = '#ff5a5a'; ctx.stroke(red);
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // current heads
+    var c1 = sim.hp1[time], c2 = sim.hp2[time];
+    var hx1 = cellToX(c1) + 0.5, hx2 = cellToX(c2) + 0.5;
+    ctx.fillStyle = '#e9fff1';
+    ctx.fillRect(Math.round(hx1), Math.max(0, yTime - 1), 2, 2);
+    ctx.fillStyle = '#ffe3ef';
+    ctx.fillRect(Math.round(hx2), Math.max(0, yTime - 1), 2, 2);
+
+    // collision marker
+    if (sim.halted && time >= sim.haltStep) {
+      var hx = cellToX(sim.haltPos) + 0.5;
+      var hy = Math.floor(sim.haltStep * H / T);
+      ctx.strokeStyle = '#ffd54a';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(hx, hy, 4, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* machine panel                                                       */
+  /* ------------------------------------------------------------------ */
+  function agentTable(a) {
+    var m = app.machine;
+    var h = '<div class="agenttbl"><div class="agentname">Agent ' + (a + 1) + '</div>' +
+      '<table class="code"><thead><tr><th></th>';
+    for (var s = 0; s < m.k; s++) h += '<th>' + s + '</th>';
+    h += '</tr></thead><tbody>';
+    for (var st = 0; st < m.n; st++) {
+      h += '<tr><th class="stname">' + stateName(st) + '</th>';
+      for (var sym = 0; sym < m.k; sym++) {
+        var e = m.agents[a][st][sym];
+        h += '<td class="' + (e ? '' : 'undef') + '">' + (e ? e.raw : '---') + '</td>';
+      }
+      h += '</tr>';
+    }
+    return h + '</tbody></table></div>';
+  }
+
+  function renderMachineInfo() {
+    var m = app.machine;
+    if (!m) return;
+    var id = holdId(m.str);
+    $('#machineHead').innerHTML = 'Machine' + (id ? ' <span class="mid">#' + fmt(id) + '</span>' : '');
+    $('#domainLine').textContent = 'CET(' + m.n + (m.k !== 2 ? ',' + m.k : '') + ') \u00b7 ' + m.n +
+      ' states \u00b7 ' + m.k + ' symbols \u00b7 2 agents';
+    $('#codeArea').innerHTML = agentTable(0) + agentTable(1);
+    $('#stdFormat').textContent = m.str;
+    var dbId = $('#dbId');
+    if (id) {
+      dbId.innerHTML = fmt(id) + ' <span class="muted">(line ' + fmt(id) + ' of the CET(3) holdout list)</span>';
+    } else {
+      dbId.innerHTML = '<span class="muted">not in the CET(3) holdout list</span>';
+    }
+    var wiki = 'https://wiki.bbchallenge.org/wiki/Catch-Em-Turing';
+    $('#btnWiki').href = wiki;
+    $('#legendSwatches').innerHTML = (function () {
+      var out = '';
+      for (var v = 0; v < m.k; v++) {
+        var g = Math.round(255 * v / Math.max(1, m.k - 1));
+        out += '<span style="background:rgb(' + g + ',' + g + ',' + g + ');color:' +
+          (g > 140 ? '#111' : '#eee') + '">' + v + '</span>';
+      }
+      return out;
+    })();
+  }
+
+  function setError(msg) {
+    var box = $('#errBox');
+    if (!msg) { box.classList.remove('on'); box.textContent = ''; return; }
+    box.classList.add('on');
+    box.textContent = msg;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* status + timeline                                                   */
+  /* ------------------------------------------------------------------ */
+  function updateStatus() {
+    var sim = app.sim, el = $('#statusLine');
+    el.classList.remove('err', 'ok');
+    if (!sim) { el.textContent = ''; return; }
+    if (sim.error) {
+      el.classList.add('err');
+      el.textContent = 'stopped at step ' + fmt(sim.total) + ' \u2014 ' + sim.error;
+    } else if (sim.halted) {
+      el.classList.add('ok');
+      el.textContent = 'halted at step ' + fmt(sim.haltStep) + ' \u2014 collision on cell ' + fmt(sim.haltPos);
+    } else {
+      el.textContent = 'no collision in ' + fmt(sim.total) + ' simulated steps';
+    }
+    var range = $('#tRange');
+    range.max = String(sim.total);
+    range.value = String(app.time);
+    $('#tLabel').textContent = fmt(app.time) + ' / ' + fmt(sim.total);
+
+    var span = clamp(Math.round(params.tapeWidth), 1, 20000);
+    var x0 = -span * params.xTrans;
+    $('#viewHint').textContent = 'view: cells ' + fmt(Math.round(x0)) + ' \u2026 ' +
+      fmt(Math.round(x0 + span)) + ' (' + fmt(span) + ' cells across ' + CW + 'px)';
+  }
+
+  function setTime(t) {
+    if (!app.sim) return;
+    app.time = clamp(t | 0, 0, app.sim.total);
+    $('#tRange').value = String(app.time);
+    $('#tLabel').textContent = fmt(app.time) + ' / ' + fmt(app.sim.total);
+    draw();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* parameters -> simulation                                            */
+  /* ------------------------------------------------------------------ */
+  function readParams() {
+    params.steps = clamp(intOf($('#pSteps').value, 2000), 1, MAX_STEPS);
+    params.tapeWidth = clamp(intOf($('#pTapeWidth').value, 400), 1, 20000);
+    params.xTrans = clamp(floatOf($('#pXTrans').value, 0.5), 0, 1);
+    params.initTape = $('#pInitTape').value;
+    params.initX = intOf($('#pInitX').value, 0);
+    params.x1 = intOf($('#pX1').value, 0);
+    params.x2 = intOf($('#pX2').value, 2);
+    params.heads = $('#pShowHeads').checked;
+    $('#pSteps').value = params.steps;
+    $('#pTapeWidth').value = params.tapeWidth;
+  }
+
+  function resimulate(keepTime) {
+    if (!app.machine) return;
+    readParams();
+    var sim;
+    try {
+      sim = simulate(app.machine, params);
+      setError('');
+    } catch (e) {
+      setError(e.message);
+      return;
+    }
+    app.sim = sim;
+    app.time = keepTime ? clamp(app.time, 0, sim.total) : sim.total;
+    app.rasterKey = '';
+    buildRaster();
+    renderMachineInfo();
+    updateStatus();
+    draw();
+  }
+
+  function rasterIfNeeded() {
+    if (app.rasterKey !== rasterKey()) buildRaster();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* loading machines                                                    */
+  /* ------------------------------------------------------------------ */
+  function setMachine(text, opts) {
+    opts = opts || {};
+    var m;
+    try {
+      m = parseCET(text);
+    } catch (e) {
+      setError(e.message);
+      return false;
+    }
+    setError('');
+    app.machine = m;
+    resimulate(false);
+    if (opts.pushUrl !== false && isHttp) {
+      try { history.replaceState(null, '', encodeURIComponent(m.str)); } catch (e) { /* ignore */ }
+    }
+    return true;
+  }
+
+  function loadFromUrl() {
+    var q = new URLSearchParams(location.search).get('m');
+    if (q) return q;
+    var segs = location.pathname.split('/').filter(Boolean);
+    var last = segs.length ? segs[segs.length - 1] : '';
+    if (!last || /\.html?$/i.test(last)) return null;
+    try { last = decodeURIComponent(last); } catch (e) { /* ignore */ }
+    return (last.indexOf('|') >= 0 && last.indexOf('_') >= 0) ? last : null;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* highlighted machines                                                */
+  /* ------------------------------------------------------------------ */
+  var HIGHLIGHTED = [
+    { label: 'CET(1) champion (1 step)', str: '1RA---|1LA---' },
+    { label: 'CET(2) champion (97 steps)', str: '1LB0LB_1RB0LA|1RB1LA_1LA1RB' },
+    { label: 'CET(3) champion (10^^12.467 steps)', str: '1LB1RA_0RB1LC_0RA0LC|1RB0RC_1LB1LC_1RA0RB' },
+    { label: 'CET(4) champion (10^^140 steps)', str: '0LD0LA_1LC1RB_0RB0LC_1RD0LB|1RB0RD_0RC0LA_1LB1RC_1LC0LC' },
+    { label: 'CET(2,3) champion (10^10^10^10^10^10^10^45 steps)', str: '1LB1RA0LB_2RB2LB2RA|2RB1LA1RB_2LB2RB1LA' },
+    { label: 'CET(3) 2-round champion (\u224810^(5.28\u00d710^47) steps, Rocq)', str: '1LB1RA_0RB1LC_1RA0LB|1RB0RC_1LB1LC_1RA0RB' },
+    { label: 'CET(3) 1-round champion (4.39\u00d710^414 steps)', str: '0LB---_1LC1RB_0RB0LC|0RB0LC_1RC1LB_1LB1RA' },
+    { label: 'CET(4) record (4,622,083,548 steps)', str: '1LC0LC_1LA1RB_0RB1LC_0RA0RA|1RC0RA_1RA1RB_1LC0RD_0RA0RC' },
+    { label: 'CET(4) former record (65,579,412 steps)', str: '0LC0RA_0LD0RA_0LB0RA_0RA0RA|1RB1LD_1RC1RB_1LC1LA_0RC0RD' },
+    { label: 'CET(2,3) record (20,350 steps)', str: '2LB1LA2LA_2RB2LA0LB|1RB0LB1RB_2LA2LA1RA' },
+    { label: 'CET(2,3) former record (8,786 steps)', str: '2LB1LA2LA_2RB0LA0LB|1RB0LB1LB_2LA2LA1RA' },
+    { label: 'CET(3) period-9 non-halting holdout', str: '1LB---_1LC1RB_0RB0LC|1RB0LA_0RC0LA_1LB1RC' },
+    { label: 'CET(3) bouncer holdout (period 32,766)', str: '0RC0LB_1LC1LA_1RB1LA|0RC1RA_1LC1RB_0RB0LC' }
+  ];
+
+  function defaultMachine() {
+    var h = HIGHLIGHTED.filter(function (x) { return x.label.indexOf('CET(3) champion') === 0; })[0];
+    return (h || HIGHLIGHTED[0]).str;
+  }
+
+  function renderHighlighted() {
+    var box = $('#hlList');
+    box.innerHTML = '';
+    HIGHLIGHTED.forEach(function (h) {
+      var b = document.createElement('button');
+      b.className = 'hlbtn';
+      b.type = 'button';
+      b.innerHTML = '<span class="hllabel">' + h.label + '</span><span class="hlstr">' + h.str + '</span>';
+      b.addEventListener('click', function () { setMachine(h.str); });
+      box.appendChild(b);
+    });
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* clipboard                                                           */
+  /* ------------------------------------------------------------------ */
+  function flash(msg) {
+    var el = $('#copyMsg');
+    el.textContent = msg;
+    clearTimeout(flash.t);
+    flash.t = setTimeout(function () { el.textContent = ''; }, 1600);
+  }
+
+  function copy(text, what) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { flash(what + ' copied'); },
+        function () { fallbackCopy(text, what); });
+    } else {
+      fallbackCopy(text, what);
+    }
+  }
+  function fallbackCopy(text, what) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); flash(what + ' copied'); }
+    catch (e) { flash('copy failed'); }
+    document.body.removeChild(ta);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* random                                                              */
+  /* ------------------------------------------------------------------ */
+  function randomHoldout() {
+    var total = holdCount();
+    if (!total) { setError('The CET(3) holdout list is missing.'); return; }
+    var id = 1 + Math.floor(Math.random() * total);
+    var str = holdAt(id);
+    if (str) setMachine(str);
+  }
+
+  function randomTable() {
+    var n = 3, k = 2;
+    var syms = '01';
+    var rows = [];
+    for (var a = 0; a < 2; a++) {
+      var agent = [];
+      for (var st = 0; st < n; st++) {
+        var row = '';
+        for (var s = 0; s < k; s++) {
+          row += syms[Math.floor(Math.random() * k)] +
+            (Math.random() < 0.5 ? 'L' : 'R') +
+            stateName(Math.floor(Math.random() * n));
+        }
+        agent.push(row);
+      }
+      rows.push(agent.join('_'));
+    }
+    setMachine(rows.join('|'));
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* events                                                              */
+  /* ------------------------------------------------------------------ */
+  $('#remain').textContent = fmt(holdCount());
+
+  $('#whatLink').addEventListener('click', function () { $('#modal').classList.add('open'); });
+  $('#modalClose').addEventListener('click', function () { $('#modal').classList.remove('open'); });
+  $('#modal').addEventListener('click', function (e) {
+    if (e.target === $('#modal')) $('#modal').classList.remove('open');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') $('#modal').classList.remove('open');
+  });
+
+  $('#paramsLink').addEventListener('click', function () {
+    var p = $('#params');
+    p.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    p.classList.add('flash');
+    setTimeout(function () { p.classList.remove('flash'); }, 1200);
+  });
+
+  $('#stdFormat').addEventListener('click', function () {
+    if (app.machine) copy(app.machine.str, 'CET string');
+  });
+  $('#btnCopy').addEventListener('click', function () { if (app.machine) copy(app.machine.str, 'CET string'); });
+  $('#btnCopy1').addEventListener('click', function () {
+    if (app.machine) copy(app.machine.str.split('|')[0], 'Machine 1');
+  });
+  $('#btnCopy2').addEventListener('click', function () {
+    if (app.machine) copy(app.machine.str.split('|')[1], 'Machine 2');
+  });
+  $('#btnCopyLink').addEventListener('click', function () {
+    if (!app.machine) return;
+    var base = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
+    copy(base + encodeURIComponent(app.machine.str), 'Link');
+  });
+
+  $('#btnRandom').addEventListener('click', randomHoldout);
+  $('#seedA').addEventListener('click', function (e) { e.preventDefault(); randomHoldout(); });
+  $('#seedA2').addEventListener('click', function (e) { e.preventDefault(); randomHoldout(); });
+  $('#btnRandomAny').addEventListener('click', randomTable);
+  $('#btnFitHoldout').addEventListener('click', function () {
+    if (!holdCount()) return;
+    randomHoldout();
+    fitView();
+  });
+
+  $('#morelink').addEventListener('click', function () {
+    var b = $('#moreBox');
+    b.hidden = !b.hidden;
+    $('#morelink').textContent = b.hidden ? 'More options' : 'Hide options';
+  });
+
+  $('#goId').addEventListener('click', function () {
+    var id = intOf($('#idInput').value, 0);
+    var str = id > 0 ? holdAt(id) : null;
+    if (!str) { setError('No machine with that id in the CET(3) holdout list (1 \u2013 ' + fmt(holdCount()) + ').'); return; }
+    setMachine(str);
+  });
+  $('#idInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') $('#goId').click();
+  });
+
+  $('#goStd').addEventListener('click', function () {
+    var v = $('#stdInput').value.trim();
+    if (v) setMachine(v);
+  });
+  $('#stdInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') $('#goStd').click();
+  });
+
+  $('#challenge').addEventListener('change', function () {
+    // CET(3) is the only challenge with a holdout list so far.
+    $('#remain').textContent = fmt(holdCount());
+  });
+
+  // parameters
+  var resimTimer = 0;
+  function scheduleResim() {
+    clearTimeout(resimTimer);
+    resimTimer = setTimeout(function () { resimulate(false); }, 180);
+  }
+  $('#pSteps').addEventListener('change', scheduleResim);
+  $('#pInitTape').addEventListener('change', scheduleResim);
+  $('#pInitX').addEventListener('change', scheduleResim);
+  $('#pX1').addEventListener('change', scheduleResim);
+  $('#pX2').addEventListener('change', scheduleResim);
+
+  $('#pTapeWidth').addEventListener('input', function () {
+    readParams(); buildRaster(); updateStatus(); draw();
+  });
+  $('#pXTrans').addEventListener('input', function () {
+    readParams(); buildRaster(); updateStatus(); draw();
+  });
+  $('#pShowHeads').addEventListener('change', function () {
+    readParams(); draw();
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.vizbtn'), function (b) {
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('.vizbtn'), function (x) {
+        x.classList.remove('on');
+      });
+      b.classList.add('on');
+      params.viz = b.getAttribute('data-viz');
+      draw();
+    });
+  });
+
+  function fitView() {
+    if (!app.sim || !app.machine) return;
+    var lo = 0, hi = 0, any = false;
+    app.sim.cells.forEach(function (arr, cell) {
+      if (!any) { lo = hi = cell; any = true; }
+      if (cell < lo) lo = cell;
+      if (cell > hi) hi = cell;
+    });
+    if (!any) return;
+    var pad = Math.max(8, Math.round((hi - lo) * 0.04));
+    var width = Math.max(16, hi - lo + 1 + 2 * pad);
+    params.tapeWidth = clamp(width, 8, 20000);
+    params.xTrans = clamp((0 - (lo - pad)) / params.tapeWidth, 0, 1);
+    $('#pTapeWidth').value = params.tapeWidth;
+    $('#pXTrans').value = params.xTrans.toFixed(3);
+    buildRaster(); updateStatus(); draw();
+  }
+
+  // timeline
+  $('#tReset').addEventListener('click', function () { stopPlay(); setTime(0); });
+  $('#tEnd').addEventListener('click', function () { stopPlay(); if (app.sim) setTime(app.sim.total); });
+  $('#tBack').addEventListener('click', function () { stopPlay(); setTime(app.time - 1); });
+  $('#tFwd').addEventListener('click', function () { stopPlay(); setTime(app.time + 1); });
+  $('#tRange').addEventListener('input', function () {
+    stopPlay();
+    setTime(intOf(this.value, 0));
+  });
+  $('#tPlay').addEventListener('click', function () { togglePlay(); });
+  $('#tFit').addEventListener('click', function () { fitView(); });
+
+  function stopPlay() {
+    app.playing = false;
+    $('#tPlay').textContent = '\u25b6';
+    if (app.raf) { cancelAnimationFrame(app.raf); app.raf = 0; }
+  }
+  function togglePlay() {
+    if (!app.sim || !app.sim.total) return;
+    if (app.playing) { stopPlay(); return; }
+    if (app.time >= app.sim.total) setTime(0);
+    app.playing = true;
+    $('#tPlay').textContent = '\u2016';
+    var last = 0;
+    var total = app.sim.total;
+    var perMs = total / 2800;
+    function frame(ts) {
+      if (!app.playing) return;
+      if (!last) last = ts;
+      var dt = Math.min(120, ts - last);
+      last = ts;
+      var next = app.time + Math.max(1, Math.round(dt * perMs));
+      if (next >= total) { setTime(total); stopPlay(); return; }
+      setTime(next);
+      app.raf = requestAnimationFrame(frame);
+    }
+    app.raf = requestAnimationFrame(frame);
+  }
+
+  // diagram scrubbing + hover readout
+  var dragging = false;
+  function timeFromEvent(e) {
+    var r = cv.getBoundingClientRect();
+    var frac = clamp((e.clientY - r.top) / r.height, 0, 1);
+    return Math.round(frac * (app.sim ? app.sim.total : 0));
+  }
+  function cellFromEvent(e) {
+    var r = cv.getBoundingClientRect();
+    var span = clamp(Math.round(params.tapeWidth), 1, 20000);
+    var x0 = -span * params.xTrans;
+    return Math.floor((e.clientX - r.left) / r.width * span + x0);
+  }
+  function tapeValueAt(cell, t) {
+    var arr = app.sim ? app.sim.cells.get(cell) : null;
+    if (!arr) return 0;
+    for (var i = 0; i < arr.length; i += 3) {
+      if (t >= arr[i] && t < arr[i + 1]) return arr[i + 2];
+    }
+    return 0;
+  }
+  cv.addEventListener('pointerdown', function (e) {
+    if (!app.sim) return;
+    dragging = true;
+    stopPlay();
+    cv.setPointerCapture(e.pointerId);
+    setTime(timeFromEvent(e));
+  });
+  cv.addEventListener('pointermove', function (e) {
+    if (!app.sim) return;
+    if (dragging) { setTime(timeFromEvent(e)); return; }
+    var t = timeFromEvent(e);
+    var cell = cellFromEvent(e);
+    var val = tapeValueAt(cell, t);
+    var tip = $('#tip');
+    var r = cv.parentNode.getBoundingClientRect();
+    tip.textContent = 'step ' + fmt(t) + '  cell ' + fmt(cell) + '\n' +
+      'value ' + val +
+      '\nagent 1: ' + stateName(app.sim.hs1[t]) + ' @ ' + fmt(app.sim.hp1[t]) +
+      '\nagent 2: ' + stateName(app.sim.hs2[t]) + ' @ ' + fmt(app.sim.hp2[t]);
+    tip.style.display = 'block';
+    var x = e.clientX - r.left, y = e.clientY - r.top;
+    if (x > 190) x -= 180;
+    if (y > 300) y -= 60;
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  });
+  cv.addEventListener('pointerleave', function () {
+    dragging = false;
+    $('#tip').style.display = 'none';
+  });
+  cv.addEventListener('pointerup', function () { dragging = false; });
+
+  window.addEventListener('resize', function () {
+    var d = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    if (d !== dpr) {
+      dpr = d;
+      cv.width = CW * dpr;
+      cv.height = CH * dpr;
+      draw();
+    }
+  });
+
+  /* ------------------------------------------------------------------ */
+  /* boot                                                                */
+  /* ------------------------------------------------------------------ */
+  renderHighlighted();
+
+  var fromUrl = loadFromUrl();
+  if (fromUrl) {
+    app.fromUrl = true;
+    if (!setMachine(fromUrl)) {
+      // fall back to the CET(3) champion when the URL is malformed
+      setMachine(defaultMachine(), { pushUrl: false });
+    }
+  } else {
+    setMachine(defaultMachine(), { pushUrl: false });
+  }
+})();
+</script>
+</body>
+</html>
