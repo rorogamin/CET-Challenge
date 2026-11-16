@@ -458,14 +458,14 @@
   var N = 37, CELL = 2.9;
   var X0 = -(N - 1) / 2 * CELL;
   var symbols = [], i;
-  for (i = 0; i < N; i++) symbols[i] = rnd() < 0.2 ? (rnd() < 0.55 ? '1' : '0') : '';
+  for (i = 0; i < N; i++) symbols[i] = rnd() < 0.45 ? (rnd() < 0.55 ? '1' : '0') : '';
 
   function cellX(k) { return X0 + k * CELL; }
   function cellOf(x) { return Math.max(0, Math.min(N - 1, Math.round((x - X0) / CELL))); }
 
   var P = { x: cellX(12), y: 1.15 };
   var B = { x: cellX(N - 9), y: 1.15, dir: 1, speed: 7.2, cell: -1, state: 0,
-    jumpIn: 5.5, forced: 0 };
+    jumpIn: 5.5, forced: 0, writes: 0 };
   var camShake = 0, shakeDecay = 0, botFlash = 0;
   var flashCell = -1, flashT = 0;
   var tAll = 0, phase = 'chaos', tChaos = 0, haltT = 0, boomT = 0;
@@ -873,9 +873,17 @@
   function botCellRead() {
     var k = B.cell, s = symbols[k];
     B.state = (B.state + 1) % 3;
+    // it reads, then writes: the symbol it read is flipped in place
+    var w = s === '1' ? '0' : s === '0' ? '1' : '';
+    if (w !== s) {
+      symbols[k] = w;
+      B.writes++;
+      flashCell = k;
+      flashT = Math.max(flashT, 0.6);
+      sfx('write', { sym: w });
+    }
     if (B.forced > 0) {
       // a fresh write owns the head until it wears off
-      sfx('read', { sym: s || '1' });
       updateHud();
       return;
     }
@@ -1119,6 +1127,8 @@
   W.__catch = {
     state: function () {
       return { phase: phase, px: P.x, bx: B.x, cell: scell(P.x), dir: B.dir, forced: B.forced,
+        writes: B.writes,
+        tape: symbols.map(function (s) { return s || '.'; }).join(''),
         botFlash: botFlash, audio: A ? A.ctx.state : 'none',
         halted: phase === 'halt' || phase === 'boom' };
     },
