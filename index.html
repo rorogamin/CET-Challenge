@@ -1298,6 +1298,20 @@
   /* ------------------------------------------------------------------ */
   /* boot                                                                */
   /* ------------------------------------------------------------------ */
+  // Secret easter egg: /catch (or ?egg=catch, #catch).
+  var eggMode = /[?&]egg=catch\b/.test(location.search) ||
+    /^#?catch$/i.test(location.hash || '') ||
+    /^catch$/i.test(location.pathname.replace(/\/+$/, '').split('/').pop() || '');
+  if (eggMode) {
+    if (isHttp) {
+      try { history.replaceState(null, '', 'catch'); } catch (e) { /* ignore */ }
+    }
+    var eggScript = document.createElement('script');
+    eggScript.src = location.href.replace(/[?#].*$/, '').replace(/[^\/]*$/, '') + 'catch.js';
+    document.head.appendChild(eggScript);
+    return;
+  }
+
   renderHighlighted();
   alignColumns();
   requestAnimationFrame(alignColumns);

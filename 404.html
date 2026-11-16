@@ -9,6 +9,7 @@
   var base = trimmed.replace(/[^\/]*$/, '');
   var seg = trimmed.split('/').pop() || '';
   try { seg = decodeURIComponent(seg); } catch (e) {}
+  if (/^catch$/i.test(seg)) { location.replace(base + '?egg=catch'); return; }
   location.replace(base + '?m=' + encodeURIComponent(seg));
 })();
 </script>
