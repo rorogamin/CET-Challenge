@@ -60,7 +60,7 @@
       ' &nbsp; STATE <span class="k" id="eggState">A</span></div>' +
       '<div class="d" id="eggBot">OTHER MACHINE &mdash;</div>' +
       '<div class="d">[&#8592; &#8594;] move &nbsp; [SHIFT] sprint &nbsp; [SPACE] write &nbsp; [E] read &nbsp; [ESC] leave</div>' +
-      '<div class="d">0 mirrors it \u00b7 halt by colliding while it reads a 0</div>' +
+      '<div class="d">it stamps every cell to 1 \u00b7 collide with it to halt</div>' +
     '</div>' +
     '<div id="eggHint">CLICK OR PRESS A KEY FOR SOUND</div>' +
     '<div id="eggEnd"><div class="big" id="eggBig">HALTED</div>' +
@@ -464,16 +464,13 @@
   function cellOf(x) { return Math.max(0, Math.min(N - 1, Math.round((x - X0) / CELL))); }
 
   var P = { x: cellX(12), y: 1.15 };
-  /* The other machine is a real transition table over the tape: it reads the
-     cell it stands on, writes, and steps. A sweeps right, B sweeps left, 1 is
-     walked over (blanks get stamped to 1), and 0 is a mirror that turns it. */
-  var TM = {
-    A: { '': ['1', 1, 'A'], '1': ['1', 1, 'A'], '0': ['0', -1, 'B'] },
-    B: { '': ['1', -1, 'B'], '1': ['1', -1, 'B'], '0': ['0', 1, 'A'] }
-  };
+  /* The other machine is a one-symbol transition table: everything it reads is
+     a 1. It stamps a 1 into the cell under the head and steps on; A sweeps
+     right, B sweeps left, and the ends of the tape turn it around. */
+  var TM = { A: ['1', 1, 'A'], B: ['1', -1, 'B'] };
   var BOT_STEP = 0.24;
   var B = { x: cellX(N - 9), y: 1.15, cell: N - 9, from: N - 9, to: N - 9,
-    timer: 0, state: 'A', writes: 0, bump: 0 };
+    timer: 0, state: 'A', writes: 0 };
   var camShake = 0, shakeDecay = 0, botFlash = 0;
   var flashCell = -1, flashT = 0;
   var tAll = 0, phase = 'chaos', tChaos = 0, haltT = 0, boomT = 0;
@@ -704,10 +701,6 @@
     readEl.textContent = s === '1' ? '1' : s === '0' ? '0' : 'BLANK';
     cellEl.textContent = String(k + 1) + ' / ' + N;
     stateEl.textContent = B.state + (B.state === 'A' ? ' \u25b6' : ' \u25c0');
-    if (noticeT > 0) {
-      botEl.textContent = noticeMsg;
-      return;
-    }
     var dx = B.x - P.x, d = Math.abs(dx);
     botEl.textContent = 'OTHER MACHINE ' + (B.state === 'A' ? '\u25b6' : '\u25c0') + ' ' +
       d.toFixed(1) + ' units \u00b7 ' + B.writes + ' writes';
@@ -858,9 +851,6 @@
   /* ------------------------------------------------------------------ */
   /* play update                                                         */
   /* ------------------------------------------------------------------ */
-  var noticeMsg = '', noticeT = 0;
-  function notice(msg) { noticeMsg = msg; noticeT = 1.4; }
-
   function playerCell() { return cellOf(P.x); }
 
   function writeCell() {
@@ -877,11 +867,9 @@
     updateHud();
   }
 
-  // one transition: read the cell under the head, write, then step.
+  // one transition: whatever is under the head becomes 1, then step.
   function botStep() {
-    var s = symbols[B.cell] || '';
-    var row = TM[B.state][s];
-    if (!row) return;
+    var row = TM[B.state];
     var w = row[0], d = row[1], ns = row[2];
     if (symbols[B.cell] !== w) {
       symbols[B.cell] = w;
@@ -946,23 +934,13 @@
     B.x = cellX(B.from) + (cellX(B.to) - cellX(B.from)) * bk;
 
     botFlash = Math.max(0, botFlash - dt * 1.2);
-    B.bump = Math.max(0, B.bump - dt);
-    noticeT = Math.max(0, noticeT - dt);
 
     B.y = 1.15;
     botAudio();
     updateHud();
 
-    // a collision only halts on a 0 cell: that is the halting transition
-    if (Math.abs(B.x - P.x) < 1.1 && B.bump <= 0) {
-      if (symbols[cellOf(P.x)] === '0') halt();
-      else {
-        B.bump = 1.2;
-        botFlash = 1;
-        sfx('wall');
-        notice('NO HALT \u2014 IT MUST READ A 0');
-      }
-    }
+    // the halting transition: the head reaches the cell you are standing on
+    if (Math.abs(B.x - P.x) < 1.1) halt();
   }
 
   /* ------------------------------------------------------------------ */
