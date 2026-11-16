@@ -60,7 +60,7 @@
       ' &nbsp; STATE <span class="k" id="eggState">A</span></div>' +
       '<div class="d" id="eggBot">OTHER MACHINE &mdash;</div>' +
       '<div class="d">[&#8592; &#8594;] move &nbsp; [SHIFT] sprint &nbsp; [SPACE] write &nbsp; [E] read &nbsp; [ESC] leave</div>' +
-      '<div class="d">write a 0 in its path (it turns around), then collide</div>' +
+      '<div class="d">0 mirrors it \u00b7 halt by colliding while it reads a 0</div>' +
     '</div>' +
     '<div id="eggHint">CLICK OR PRESS A KEY FOR SOUND</div>' +
     '<div id="eggEnd"><div class="big" id="eggBig">HALTED</div>' +
@@ -458,14 +458,22 @@
   var N = 37, CELL = 2.9;
   var X0 = -(N - 1) / 2 * CELL;
   var symbols = [], i;
-  for (i = 0; i < N; i++) symbols[i] = rnd() < 0.45 ? (rnd() < 0.55 ? '1' : '0') : '';
+  for (i = 0; i < N; i++) symbols[i] = rnd() < 0.38 ? '1' : '';
 
   function cellX(k) { return X0 + k * CELL; }
   function cellOf(x) { return Math.max(0, Math.min(N - 1, Math.round((x - X0) / CELL))); }
 
   var P = { x: cellX(12), y: 1.15 };
-  var B = { x: cellX(N - 9), y: 1.15, dir: 1, speed: 7.2, cell: -1, state: 0,
-    jumpIn: 5.5, forced: 0, writes: 0 };
+  /* The other machine is a real transition table over the tape: it reads the
+     cell it stands on, writes, and steps. A sweeps right, B sweeps left, 1 is
+     walked over (blanks get stamped to 1), and 0 is a mirror that turns it. */
+  var TM = {
+    A: { '': ['1', 1, 'A'], '1': ['1', 1, 'A'], '0': ['0', -1, 'B'] },
+    B: { '': ['1', -1, 'B'], '1': ['1', -1, 'B'], '0': ['0', 1, 'A'] }
+  };
+  var BOT_STEP = 0.24;
+  var B = { x: cellX(N - 9), y: 1.15, cell: N - 9, from: N - 9, to: N - 9,
+    timer: 0, state: 'A', writes: 0, bump: 0 };
   var camShake = 0, shakeDecay = 0, botFlash = 0;
   var flashCell = -1, flashT = 0;
   var tAll = 0, phase = 'chaos', tChaos = 0, haltT = 0, boomT = 0;
@@ -695,9 +703,14 @@
     var k = cellOf(P.x), s = symbols[k];
     readEl.textContent = s === '1' ? '1' : s === '0' ? '0' : 'BLANK';
     cellEl.textContent = String(k + 1) + ' / ' + N;
-    stateEl.textContent = 'ABC'[B.state];
+    stateEl.textContent = B.state + (B.state === 'A' ? ' \u25b6' : ' \u25c0');
+    if (noticeT > 0) {
+      botEl.textContent = noticeMsg;
+      return;
+    }
     var dx = B.x - P.x, d = Math.abs(dx);
-    botEl.textContent = 'OTHER MACHINE ' + (dx < 0 ? '\u25c0' : '\u25b6') + ' ' + d.toFixed(1) + ' units';
+    botEl.textContent = 'OTHER MACHINE ' + (B.state === 'A' ? '\u25b6' : '\u25c0') + ' ' +
+      d.toFixed(1) + ' units \u00b7 ' + B.writes + ' writes';
   }
 
   /* ------------------------------------------------------------------ */
@@ -845,7 +858,8 @@
   /* ------------------------------------------------------------------ */
   /* play update                                                         */
   /* ------------------------------------------------------------------ */
-  var fleeTimer = 0;
+  var noticeMsg = '', noticeT = 0;
+  function notice(msg) { noticeMsg = msg; noticeT = 1.4; }
 
   function playerCell() { return cellOf(P.x); }
 
@@ -854,13 +868,6 @@
     symbols[k] = s === '' ? '1' : s === '1' ? '0' : '';
     flashCell = k; flashT = 1;
     sfx('write', { sym: symbols[k] });
-    // a 0 under a nearby head takes it: the machine turns on the spot
-    if (symbols[k] === '0' && Math.abs(B.x - cellX(k)) < 6.5) {
-      B.dir = -B.dir;
-      B.forced = 3.6;
-      botFlash = 1;
-      sfx('flip');
-    }
     updateHud();
   }
   function readCell() {
@@ -870,45 +877,36 @@
     updateHud();
   }
 
-  function botCellRead() {
-    var k = B.cell, s = symbols[k];
-    B.state = (B.state + 1) % 3;
-    // it reads, then writes: the symbol it read is flipped in place
-    var w = s === '1' ? '0' : s === '0' ? '1' : '';
-    if (w !== s) {
-      symbols[k] = w;
+  // one transition: read the cell under the head, write, then step.
+  function botStep() {
+    var s = symbols[B.cell] || '';
+    var row = TM[B.state][s];
+    if (!row) return;
+    var w = row[0], d = row[1], ns = row[2];
+    if (symbols[B.cell] !== w) {
+      symbols[B.cell] = w;
       B.writes++;
-      flashCell = k;
-      flashT = Math.max(flashT, 0.6);
+      flashCell = B.cell;
+      flashT = Math.max(flashT, 0.5);
       sfx('write', { sym: w });
     }
-    if (B.forced > 0) {
-      // a fresh write owns the head until it wears off
-      updateHud();
-      return;
+    var next = B.cell + d;
+    if (next < 0 || next >= N) {
+      // the tape ends behave like a mirror cell
+      next = B.cell - d;
+      ns = d > 0 ? 'B' : 'A';
+      sfx('wall');
     }
-    if (s === '0') {
-      // a written 0 takes the head: it really turns, and the flight logic waits
-      B.dir = -B.dir;
-      B.forced = 3.6;
-      botFlash = 1;
+    B.from = B.cell;
+    B.to = next;
+    B.cell = next;
+    B.timer = 0;
+    if (ns !== B.state) {
+      botFlash = Math.max(botFlash, 0.7);
       sfx('flip');
-    } else if (s === '1') {
-      sfx('read', { sym: '1' });
     }
+    B.state = ns;
     updateHud();
-  }
-
-  function botJump() {
-    if (Math.abs(B.x) > 40 || Math.abs(B.x - P.x) < 5.5) return;
-    var away = B.x > P.x ? 1 : -1;
-    var nx = B.x + away * 11;
-    nx = Math.max(X0 - 0.5, Math.min(cellX(N - 1) + 0.5, nx));
-    B.x = nx;
-    B.cell = cellOf(B.x);
-    B.dir = away;
-    sfx('jump');
-    camShake = Math.max(camShake, 0.12);
   }
 
   function halt() {
@@ -942,37 +940,29 @@
     camShake = Math.max(0, camShake - dt * 1.6);
     flashT = Math.max(0, flashT - dt * 2.2);
 
-    B.jumpIn -= dt;
-    if (B.jumpIn <= 0) { B.jumpIn = 6.5; botJump(); }
+    B.timer += dt;
+    if (B.timer >= BOT_STEP) botStep();
+    var bk = Math.min(1, B.timer / BOT_STEP);
+    B.x = cellX(B.from) + (cellX(B.to) - cellX(B.from)) * bk;
 
-    B.x += B.dir * B.speed * (B.forced > 0 ? 1.18 : 1) * dt;
-    if (B.x < X0 - 0.5) { B.x = X0 - 0.5; B.dir = 1; sfx('wall'); }
-    if (B.x > cellX(N - 1) + 0.5) { B.x = cellX(N - 1) + 0.5; B.dir = -1; sfx('wall'); }
-
-    var c = cellOf(B.x);
-    if (c !== B.cell) {
-      B.cell = c;
-      botCellRead();
-    }
-
-    if (B.forced > 0) B.forced = Math.max(0, B.forced - dt);
     botFlash = Math.max(0, botFlash - dt * 1.2);
-
-    fleeTimer -= dt;
-    if (fleeTimer <= 0) {
-      fleeTimer = 0.5;
-      if (B.forced <= 0 && Math.abs(B.x - P.x) < 13 &&
-        B.dir !== (B.x > P.x ? 1 : -1)) {
-        B.dir = B.x > P.x ? 1 : -1;
-        if (rnd() < 0.25) sfx('flip');
-      }
-    }
+    B.bump = Math.max(0, B.bump - dt);
+    noticeT = Math.max(0, noticeT - dt);
 
     B.y = 1.15;
     botAudio();
     updateHud();
 
-    if (Math.abs(B.x - P.x) < 1.3) halt();
+    // a collision only halts on a 0 cell: that is the halting transition
+    if (Math.abs(B.x - P.x) < 1.1 && B.bump <= 0) {
+      if (symbols[cellOf(P.x)] === '0') halt();
+      else {
+        B.bump = 1.2;
+        botFlash = 1;
+        sfx('wall');
+        notice('NO HALT \u2014 IT MUST READ A 0');
+      }
+    }
   }
 
   /* ------------------------------------------------------------------ */
@@ -1126,8 +1116,8 @@
 
   W.__catch = {
     state: function () {
-      return { phase: phase, px: P.x, bx: B.x, cell: scell(P.x), dir: B.dir, forced: B.forced,
-        writes: B.writes,
+      return { phase: phase, px: P.x, bx: B.x, cell: scell(P.x), state: B.state,
+        writes: B.writes, botCell: B.cell,
         tape: symbols.map(function (s) { return s || '.'; }).join(''),
         botFlash: botFlash, audio: A ? A.ctx.state : 'none',
         halted: phase === 'halt' || phase === 'boom' };
