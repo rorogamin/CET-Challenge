@@ -60,7 +60,7 @@
       ' &nbsp; STATE <span class="k" id="eggState">A</span></div>' +
       '<div class="d" id="eggBot">OTHER MACHINE &mdash;</div>' +
       '<div class="d">[&#8592; &#8594;] move &nbsp; [SHIFT] sprint &nbsp; [SPACE] write &nbsp; [E] read &nbsp; [ESC] leave</div>' +
-      '<div class="d">it stamps every cell to 1 \u00b7 collide with it to halt</div>' +
+      '<div class="d">0 reverses it \u00b7 collide with it to halt</div>' +
     '</div>' +
     '<div id="eggHint">CLICK OR PRESS A KEY FOR SOUND</div>' +
     '<div id="eggEnd"><div class="big" id="eggBig">HALTED</div>' +
@@ -464,10 +464,13 @@
   function cellOf(x) { return Math.max(0, Math.min(N - 1, Math.round((x - X0) / CELL))); }
 
   var P = { x: cellX(12), y: 1.15 };
-  /* The other machine is a one-symbol transition table: everything it reads is
-     a 1. It stamps a 1 into the cell under the head and steps on; A sweeps
-     right, B sweeps left, and the ends of the tape turn it around. */
-  var TM = { A: ['1', 1, 'A'], B: ['1', -1, 'B'] };
+  /* Everything the head reads becomes a 1, but a 0 is still a mirror: it writes
+     the 1 and reverses on the spot. A sweeps right, B sweeps left, and the ends
+     of the tape turn it around too. */
+  var TM = {
+    A: { '': ['1', 1, 'A'], '1': ['1', 1, 'A'], '0': ['1', -1, 'B'] },
+    B: { '': ['1', -1, 'B'], '1': ['1', -1, 'B'], '0': ['1', 1, 'A'] }
+  };
   var BOT_STEP = 0.24;
   var B = { x: cellX(N - 9), y: 1.15, cell: N - 9, from: N - 9, to: N - 9,
     timer: 0, state: 'A', writes: 0 };
@@ -869,7 +872,8 @@
 
   // one transition: whatever is under the head becomes 1, then step.
   function botStep() {
-    var row = TM[B.state];
+    var row = TM[B.state][symbols[B.cell] || ''];
+    if (!row) return;
     var w = row[0], d = row[1], ns = row[2];
     if (symbols[B.cell] !== w) {
       symbols[B.cell] = w;
