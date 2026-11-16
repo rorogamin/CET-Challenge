@@ -388,7 +388,10 @@
   </div>
 </div>
 
-<script src="cet3-holdouts.js"></script>
+<script>
+  /* Pages caches scripts for ten minutes, so version the holdout list by load. */
+  document.write('<script src="cet3-holdouts.js?v=' + Date.now() + '"><\/script>');
+</script>
 <script>
 (function () {
   'use strict';
