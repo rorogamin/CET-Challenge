@@ -60,7 +60,7 @@
       ' &nbsp; STATE <span class="k" id="eggState">A</span></div>' +
       '<div class="d" id="eggBot">OTHER MACHINE &mdash;</div>' +
       '<div class="d">[&#8592; &#8594;] move &nbsp; [SHIFT] sprint &nbsp; [SPACE] write &nbsp; [E] read &nbsp; [ESC] leave</div>' +
-      '<div class="d">halt by colliding with the other machine</div>' +
+      '<div class="d">write a 0 in its path (it turns around), then collide</div>' +
     '</div>' +
     '<div id="eggHint">CLICK OR PRESS A KEY FOR SOUND</div>' +
     '<div id="eggEnd"><div class="big" id="eggBig">HALTED</div>' +
@@ -455,7 +455,7 @@
   /* ------------------------------------------------------------------ */
   /* world                                                               */
   /* ------------------------------------------------------------------ */
-  var N = 41, CELL = 2.0;
+  var N = 37, CELL = 2.9;
   var X0 = -(N - 1) / 2 * CELL;
   var symbols = [], i;
   for (i = 0; i < N; i++) symbols[i] = rnd() < 0.2 ? (rnd() < 0.55 ? '1' : '0') : '';
@@ -463,9 +463,10 @@
   function cellX(k) { return X0 + k * CELL; }
   function cellOf(x) { return Math.max(0, Math.min(N - 1, Math.round((x - X0) / CELL))); }
 
-  var P = { x: cellX(8), y: 1.15 };
-  var B = { x: cellX(N - 9), y: 1.15, dir: 1, speed: 7.2, cell: -1, state: 0, jumpIn: 5.5 };
-  var camShake = 0, shakeDecay = 0;
+  var P = { x: cellX(12), y: 1.15 };
+  var B = { x: cellX(N - 9), y: 1.15, dir: 1, speed: 7.2, cell: -1, state: 0,
+    jumpIn: 5.5, forced: 0 };
+  var camShake = 0, shakeDecay = 0, botFlash = 0;
   var flashCell = -1, flashT = 0;
   var tAll = 0, phase = 'chaos', tChaos = 0, haltT = 0, boomT = 0;
   var halted = [0, 0, 0], lastVP = null, GW = 2, GH = 2;
@@ -755,14 +756,14 @@
   var camEye = [0, 7, 10.4], camLook = [0, 0.8, -6];
   function cameraVP(zoom) {
     var shake = camShake;
-    var tx = P.x * 0.9, ty = 5.5, tz = 8.7;
-    if (zoom) { tx = halted[0]; ty = 3.1; tz = 4.4; }
+    var tx = P.x * 0.9, ty = 7.2, tz = 11.8;
+    if (zoom) { tx = halted[0]; ty = 3.7; tz = 5.4; }
     var ex = tx + (rnd() - 0.5) * shake;
     var ey = ty + Math.sin(tAll * 0.7) * 0.22 + (rnd() - 0.5) * shake;
     var ez = tz + (rnd() - 0.5) * shake;
     var lx = zoom ? halted[0] : P.x * 0.99;
     var ly = zoom ? halted[1] : 0.72;
-    var lz = zoom ? halted[2] : -4.4;
+    var lz = zoom ? halted[2] : -6.6;
     camEye = [ex, ey, ez];
     camLook = [lx, ly, lz];
     var view = lookAt(camEye, camLook, [0, 1, 0]);
@@ -811,24 +812,26 @@
         var b = 1 + flashT * 1.6;
         col = [col[0] * b, col[1] * b, col[2] * b];
       }
-      setMesh(s === '1' ? 2 : s === '0' ? 3 : 1, [cellX(k), 0.02, 0], [CELL * 0.94, 1, 5.6], col);
+      setMesh(s === '1' ? 2 : s === '0' ? 3 : 1, [cellX(k), 0.02, 0], [CELL * 0.92, 1, 7.2], col);
       drawMesh(quad);
     }
 
     var bob = Math.sin(tAll * 2.4) * 0.09;
-    setMesh(0, [P.x, P.y + bob, 0], [1.45, 1.45, 1.45], [0.35, 0.95, 1.0]);
+    setMesh(0, [P.x, P.y + bob, 0], [1.9, 1.9, 1.9], [0.35, 0.95, 1.0]);
     drawMesh(cube);
     gl.uniform3f(sceneU.uOffset, P.x, P.y + bob, 0);
-    gl.uniform3f(sceneU.uScale, 2.05, 2.05, 2.05);
+    gl.uniform3f(sceneU.uScale, 2.6, 2.6, 2.6);
     gl.uniform3f(sceneU.uColor, 0.06, 0.3, 0.42);
     drawMesh(cube);
 
     var bbob = Math.sin(tAll * 1.7 + 1.3) * 0.1;
-    setMesh(0, [B.x, B.y + bbob, 0], [1.45, 1.45, 1.45], [1.0, 0.26, 0.34]);
+    var bf = Math.min(1, botFlash) * 0.85;
+    setMesh(0, [B.x, B.y + bbob, 0], [1.9, 1.9, 1.9],
+      [1.0, 0.26 + 0.7 * bf, 0.34 + 0.5 * bf]);
     drawMesh(cube);
     gl.uniform3f(sceneU.uOffset, B.x, B.y + bbob, 0);
-    gl.uniform3f(sceneU.uScale, 2.05, 2.05, 2.05);
-    gl.uniform3f(sceneU.uColor, 0.4, 0.05, 0.09);
+    gl.uniform3f(sceneU.uScale, 2.6, 2.6, 2.6);
+    gl.uniform3f(sceneU.uColor, 0.4 + 0.5 * bf, 0.05 + 0.6 * bf, 0.09 + 0.6 * bf);
     drawMesh(cube);
 
     gl.enable(gl.BLEND);
@@ -851,6 +854,13 @@
     symbols[k] = s === '' ? '1' : s === '1' ? '0' : '';
     flashCell = k; flashT = 1;
     sfx('write', { sym: symbols[k] });
+    // a 0 under a nearby head takes it: the machine turns on the spot
+    if (symbols[k] === '0' && Math.abs(B.x - cellX(k)) < 6.5) {
+      B.dir = -B.dir;
+      B.forced = 3.6;
+      botFlash = 1;
+      sfx('flip');
+    }
     updateHud();
   }
   function readCell() {
@@ -863,8 +873,17 @@
   function botCellRead() {
     var k = B.cell, s = symbols[k];
     B.state = (B.state + 1) % 3;
+    if (B.forced > 0) {
+      // a fresh write owns the head until it wears off
+      sfx('read', { sym: s || '1' });
+      updateHud();
+      return;
+    }
     if (s === '0') {
+      // a written 0 takes the head: it really turns, and the flight logic waits
       B.dir = -B.dir;
+      B.forced = 3.6;
+      botFlash = 1;
       sfx('flip');
     } else if (s === '1') {
       sfx('read', { sym: '1' });
@@ -873,9 +892,9 @@
   }
 
   function botJump() {
-    if (Math.abs(B.x) > 28 || Math.abs(B.x - P.x) < 5.5) return;
+    if (Math.abs(B.x) > 40 || Math.abs(B.x - P.x) < 5.5) return;
     var away = B.x > P.x ? 1 : -1;
-    var nx = B.x + away * 8;
+    var nx = B.x + away * 11;
     nx = Math.max(X0 - 0.5, Math.min(cellX(N - 1) + 0.5, nx));
     B.x = nx;
     B.cell = cellOf(B.x);
@@ -918,7 +937,7 @@
     B.jumpIn -= dt;
     if (B.jumpIn <= 0) { B.jumpIn = 6.5; botJump(); }
 
-    B.x += B.dir * B.speed * dt;
+    B.x += B.dir * B.speed * (B.forced > 0 ? 1.18 : 1) * dt;
     if (B.x < X0 - 0.5) { B.x = X0 - 0.5; B.dir = 1; sfx('wall'); }
     if (B.x > cellX(N - 1) + 0.5) { B.x = cellX(N - 1) + 0.5; B.dir = -1; sfx('wall'); }
 
@@ -928,10 +947,14 @@
       botCellRead();
     }
 
+    if (B.forced > 0) B.forced = Math.max(0, B.forced - dt);
+    botFlash = Math.max(0, botFlash - dt * 1.2);
+
     fleeTimer -= dt;
     if (fleeTimer <= 0) {
       fleeTimer = 0.5;
-      if (Math.abs(B.x - P.x) < 13 && B.dir !== (B.x > P.x ? 1 : -1)) {
+      if (B.forced <= 0 && Math.abs(B.x - P.x) < 13 &&
+        B.dir !== (B.x > P.x ? 1 : -1)) {
         B.dir = B.x > P.x ? 1 : -1;
         if (rnd() < 0.25) sfx('flip');
       }
@@ -941,7 +964,7 @@
     botAudio();
     updateHud();
 
-    if (Math.abs(B.x - P.x) < 1.15) halt();
+    if (Math.abs(B.x - P.x) < 1.3) halt();
   }
 
   /* ------------------------------------------------------------------ */
@@ -1095,7 +1118,9 @@
 
   W.__catch = {
     state: function () {
-      return { phase: phase, px: P.x, bx: B.x, cell: scell(P.x), halted: phase === 'halt' || phase === 'boom' };
+      return { phase: phase, px: P.x, bx: B.x, cell: scell(P.x), dir: B.dir, forced: B.forced,
+        botFlash: botFlash, audio: A ? A.ctx.state : 'none',
+        halted: phase === 'halt' || phase === 'boom' };
     },
     win: function () { if (phase === 'play') B.x = P.x; },
     skipChaos: function () { if (phase === 'chaos') enterPlay(); },
