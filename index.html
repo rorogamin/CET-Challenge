@@ -1307,7 +1307,8 @@
       try { history.replaceState(null, '', 'catch'); } catch (e) { /* ignore */ }
     }
     var eggScript = document.createElement('script');
-    eggScript.src = location.href.replace(/[?#].*$/, '').replace(/[^\/]*$/, '') + 'catch.js';
+    eggScript.src = location.href.replace(/[?#].*$/, '').replace(/[^\/]*$/, '') +
+      'catch.js?v=' + Date.now();
     document.head.appendChild(eggScript);
     return;
   }

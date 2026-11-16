@@ -887,7 +887,6 @@
     }
     B.from = B.cell;
     B.to = next;
-    B.cell = next;
     B.timer = 0;
     if (ns !== B.state) {
       botFlash = Math.max(botFlash, 0.7);
@@ -929,7 +928,11 @@
     flashT = Math.max(0, flashT - dt * 2.2);
 
     B.timer += dt;
-    if (B.timer >= BOT_STEP) botStep();
+    if (B.timer >= BOT_STEP) {
+      // the slide has landed: only now is the head standing on the next cell
+      B.cell = B.to;
+      botStep();
+    }
     var bk = Math.min(1, B.timer / BOT_STEP);
     B.x = cellX(B.from) + (cellX(B.to) - cellX(B.from)) * bk;
 
